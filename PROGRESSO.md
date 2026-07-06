@@ -47,8 +47,20 @@ então comandos dispensam o prefixo `docker compose exec api`.
 - ✅ Fundação completa: Docker, Postgres, FastAPI, Alembic, Dev Container.
 - ✅ Arquitetura em camadas montada (`app/`).
 - ✅ Recurso **produtos** com CRUD completo (criar, listar, obter, atualizar, deletar).
-- 🔜 Próximo: relacionamentos (Vendedor, Venda, Pessoa, Conta), testes (pytest),
-  autenticação (JWT), depois o frontend (Vue).
+- ✅ Recurso **vendedores** (criar, listar).
+- ✅ Domínio de vendas modelado: `Venda` → `ItemVenda` (N) → `Produto`/`Vendedor`.
+  **Vendedor é por item** (uma venda pode ter produtos de vários vendedores) e o
+  `preco_unitario` fica **congelado** no item (histórico de preço).
+- 🔜 Próximo: endpoint de **registrar venda**, depois `forma_pagamento`, a **conta**
+  (fiado) e o **relatório**. Mais à frente: testes (pytest), auth (JWT), frontend (Vue).
+
+### Modelo de dados atual
+
+```
+Vendedor ─1:N─ ItemVenda ─N:1─ Produto
+                   │
+Venda ────1:N──────┘   (ItemVenda: quantidade, preco_unitario congelado)
+```
 
 ## Comandos úteis
 
@@ -85,6 +97,10 @@ docker compose up -d --build
 | 10 | Dev Containers | Editor dentro do container, usuário `appuser` (HOME), instalar `git` na imagem slim. |
 | 11 | Endpoints (produtos) | Schemas Pydantic, dependência `get_db`, `crud`, `router`, `include_router`. |
 | 12 | CRUD completo | Path params `{id}`, `HTTPException` 404, status 204. |
+| 13 | Foreign Key | `ForeignKey(...)`, integridade referencial, `server_default=func.now()`. |
+| 14 | `relationship()` | Navegação no ORM (`back_populates`), `TYPE_CHECKING` p/ evitar import circular. |
+| 15 | Remodelar venda | `ItemVenda` (vendedor por item, preço congelado), `alembic downgrade -1`. |
+| 16 | Endpoints (vendedores) | **Feito por mim**, replicando o padrão de produtos. |
 
 ## Lições de depuração (pra levar pra vida)
 
@@ -94,3 +110,7 @@ docker compose up -d --build
 - **Imagem `slim`** vem mínima — falta `git`, etc.: instala-se no `Dockerfile` via `apt-get`.
 - **Arquivos criados dentro do container** nascem do `root` por padrão — por isso
   rodamos como `appuser` (uid 1000).
+- **Copiar-e-adaptar** um arquivo: renomeie **tudo** por dentro (nomes de funções
+  etc.), senão dá `AttributeError` só em tempo de execução.
+- **`psql` via `docker compose exec`**: use a flag **`-T`** para a saída sair limpa
+  (sem `-T` o `\d` pode se perder num paginador e aparecer vazio).
