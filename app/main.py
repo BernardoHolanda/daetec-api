@@ -1,13 +1,13 @@
 from fastapi import FastAPI
 from sqlalchemy import text
 
-from database import engine
+from app.database import engine
 
 app = FastAPI(title="DAETEC API")
 
 @app.get("/")
 def raiz():
-    return {"mensagem": "Olá mundo — DATEC API esta no ar, agora com hot reload!"}
+    return {"mensagem": "Olá mundo — DATEC API esta no ar, agora com host reload!"}
 
 @app.get("/health/db")
 def health_db():

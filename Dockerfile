@@ -2,7 +2,7 @@
 FROM python:3.13-slim
 
 # 2. Pasta de trabalho dentro do container
-WORKDIR /app
+WORKDIR /code
 
 # 3. Copia SÓ o requirements primeiro
 COPY requirements.txt .
@@ -17,4 +17,4 @@ COPY . .
 EXPOSE 8000
 
 # 7. Comando que roda quando o container sobe
-CMD ["fastapi", "run", "main.py", "--port", "8000"]
+CMD ["fastapi", "run", "app/main.py", "--port", "8000"]
