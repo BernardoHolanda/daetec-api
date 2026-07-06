@@ -1,7 +1,7 @@
-from fast api import FastAPI
+from fastapi import FastAPI
 
 app = FastAPI(title="DAETEC API")
 
 @app.get("/")
-    def raiz():
-        return {"mensagem": "Olá mundo - DAETEC API no ar!"}
+def raiz():
+    return {"mensagem": "Olá mundo — agora com hot reload!"}
