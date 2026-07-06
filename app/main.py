@@ -2,8 +2,10 @@ from fastapi import FastAPI
 from sqlalchemy import text
 
 from app.database import engine
+from app.routers import produtos
 
 app = FastAPI(title="DAETEC API")
+app.include_router(produtos.router)
 
 @app.get("/")
 def raiz():
