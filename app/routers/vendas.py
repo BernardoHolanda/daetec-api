@@ -27,3 +27,11 @@ def obter(venda_id: int, db: Session = Depends(get_db)):
     if venda is None:
         raise HTTPException(status_code=404, detail="Venda não encontrada")
     return venda
+
+
+@router.delete("/{venda_id}", response_model=VendaRead)
+def cancelar(venda_id: int, db: Session = Depends(get_db)):
+    venda = crud_venda.obter_venda(db, venda_id)
+    if venda is None:
+        raise HTTPException(status_code=404, detail="Venda não encontrada")
+    return crud_venda.cancelar_venda(db, venda)

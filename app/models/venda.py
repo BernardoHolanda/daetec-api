@@ -17,3 +17,5 @@ class Venda(Base):
     data_hora: Mapped[datetime] = mapped_column(server_default=func.now())
 
     itens: Mapped[list["ItemVenda"]] = relationship(back_populates="venda")
+
+    cancelada_em: Mapped[datetime | None]

@@ -27,6 +27,7 @@ class ItemVendaRead(BaseModel):
 class VendaRead(BaseModel):
     id: int
     data_hora: datetime
+    cancelada_em: datetime | None
     itens: list[ItemVendaRead]
 
     model_config = {"from_attributes": True}

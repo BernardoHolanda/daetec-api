@@ -53,11 +53,11 @@ então comandos dispensam o prefixo `docker compose exec api`.
 - ✅ Domínio de vendas modelado: `Venda` → `ItemVenda` (N) → `Produto`/`Vendedor`.
   **Vendedor é por item** (uma venda pode ter produtos de vários vendedores) e o
   `preco_unitario` fica **congelado** no item (histórico de preço).
-- ✅ Recurso **vendas**: `criar` (registrar, congela preço), `listar`, `obter`.
-  **Sem `atualizar`** de propósito — venda é registro imutável (evento), não cadastro.
-- 🔜 Próximo (lição 18): **cancelamento de venda** (soft delete, campo `cancelada_em`)
-  + **foreign key / cascade** — apagar/cancelar lida com os `itens_venda` dependentes.
-  Depois: `forma_pagamento`, a **conta** (fiado) e o **relatório**. Mais à frente:
+- ✅ Recurso **vendas**: `criar` (registrar, congela preço), `listar` (só ativas),
+  `obter`, `cancelar` (soft delete via `cancelada_em`). **Sem `atualizar`** de
+  propósito — venda é registro imutável (evento), não cadastro.
+- 🔜 Próximo (lição 19): **`forma_pagamento`** na venda (pix/dinheiro/débito/crédito).
+  Depois: a **conta** (fiado) e o **relatório** de fim de dia. Mais à frente:
   testes (pytest), auth (JWT), frontend (Vue).
 
 ### Modelo de dados atual
@@ -108,6 +108,7 @@ docker compose up -d --build
 | 15 | Remodelar venda | `ItemVenda` (vendedor por item, preço congelado), `alembic downgrade -1`. |
 | 16 | Endpoints (vendedores) | **Feito por mim**, replicando o padrão de produtos (só `criar`, `listar`; depois `obter`, `atualizar`). |
 | 17 | Registrar venda | Schema **aninhado** (`VendaCreate` c/ `list[ItemVendaCreate]`), **transação** (um `commit` = tudo ou nada), **congelar preço** (`preco_unitario` copiado do produto no ato), `venda.itens.append` + *cascade* do `relationship`, e **erro de domínio no crud (`ValueError`) traduzido pra HTTP no router**. Inclui `listar` e `obter`. |
+| 18 | Cancelar venda (soft delete) + FK | **Integridade referencial** vista ao vivo (`DELETE` cru barrado pela FK). **Soft delete**: coluna nullable `cancelada_em` (migration segura porque nullable), `cancelar_venda` marca a data (não apaga), `listar` esconde canceladas (`.is_(None)`), `obter` mantém p/ auditoria. HTTP: cancelar devolve o recurso (**200 + `VendaRead`**), não 204 — contraste hard×soft delete. |
 
 ## Lições de depuração (pra levar pra vida)
 

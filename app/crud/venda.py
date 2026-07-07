@@ -1,6 +1,8 @@
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from datetime import datetime, timezone
+
 from app.models.produto import Produto
 from app.models.venda import Venda
 from app.models.item_venda import ItemVenda
@@ -31,8 +33,15 @@ def criar_venda(db: Session, dados: VendaCreate) -> Venda:
 
 
 def listar_vendas(db: Session) -> list[Venda]:
-    return list(db.scalars(select(Venda)).all())
+    return list(db.scalars(select(Venda).where(Venda.cancelada_em.is_(None))).all())
 
 
 def obter_venda(db: Session, venda_id: int) -> Venda | None:
     return db.get(Venda, venda_id)
+
+
+def cancelar_venda(db: Session, venda: Venda) -> Venda:
+    venda.cancelada_em = datetime.now(timezone.utc)
+    db.commit()
+    db.refresh(venda)
+    return venda
