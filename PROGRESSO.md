@@ -2,7 +2,7 @@
 
 > Registro do aprendizado e do estado do projeto (backend).
 > Para o **o quê/porquê** do produto, veja `../DEFINICAO.md`.
-> Última atualização: 2026-07-06
+> Última atualização: 2026-07-07
 
 ## Stack
 
@@ -47,7 +47,9 @@ então comandos dispensam o prefixo `docker compose exec api`.
 - ✅ Fundação completa: Docker, Postgres, FastAPI, Alembic, Dev Container.
 - ✅ Arquitetura em camadas montada (`app/`).
 - ✅ Recurso **produtos** com CRUD completo (criar, listar, obter, atualizar, deletar).
-- ✅ Recurso **vendedores** (criar, listar).
+- ✅ Recurso **vendedores** (criar, listar, obter, atualizar).
+  `deletar` **adiado de propósito**: apagar vendedor com `ItemVenda` viola a FK
+  (`IntegrityError`) — vira lição própria de foreign key depois que houver vendas.
 - ✅ Domínio de vendas modelado: `Venda` → `ItemVenda` (N) → `Produto`/`Vendedor`.
   **Vendedor é por item** (uma venda pode ter produtos de vários vendedores) e o
   `preco_unitario` fica **congelado** no item (histórico de preço).
