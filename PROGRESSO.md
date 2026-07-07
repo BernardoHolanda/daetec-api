@@ -121,3 +121,9 @@ docker compose up -d --build
   etc.), senão dá `AttributeError` só em tempo de execução.
 - **`psql` via `docker compose exec`**: use a flag **`-T`** para a saída sair limpa
   (sem `-T` o `\d` pode se perder num paginador e aparecer vazio).
+- **Dev Container × `docker compose` no host**: com o Dev Container aberto, **não**
+  rode `docker compose up/down/restart` no terminal do host — o VS Code gerencia o
+  próprio container do serviço `api` (imagem `vsc-...`), e o `up` da CLI o **recria**
+  na versão crua, derrubando a conexão (VS Code trava tentando reconectar). Conserto:
+  *Dev Containers: Rebuild and Reopen in Container*. Código Python nem precisa: o
+  `fastapi dev` faz **hot reload** sozinho.
