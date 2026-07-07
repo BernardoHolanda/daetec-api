@@ -53,8 +53,12 @@ então comandos dispensam o prefixo `docker compose exec api`.
 - ✅ Domínio de vendas modelado: `Venda` → `ItemVenda` (N) → `Produto`/`Vendedor`.
   **Vendedor é por item** (uma venda pode ter produtos de vários vendedores) e o
   `preco_unitario` fica **congelado** no item (histórico de preço).
-- 🔜 Próximo: endpoint de **registrar venda**, depois `forma_pagamento`, a **conta**
-  (fiado) e o **relatório**. Mais à frente: testes (pytest), auth (JWT), frontend (Vue).
+- ✅ Recurso **vendas**: `criar` (registrar, congela preço), `listar`, `obter`.
+  **Sem `atualizar`** de propósito — venda é registro imutável (evento), não cadastro.
+- 🔜 Próximo (lição 18): **cancelamento de venda** (soft delete, campo `cancelada_em`)
+  + **foreign key / cascade** — apagar/cancelar lida com os `itens_venda` dependentes.
+  Depois: `forma_pagamento`, a **conta** (fiado) e o **relatório**. Mais à frente:
+  testes (pytest), auth (JWT), frontend (Vue).
 
 ### Modelo de dados atual
 
@@ -102,7 +106,8 @@ docker compose up -d --build
 | 13 | Foreign Key | `ForeignKey(...)`, integridade referencial, `server_default=func.now()`. |
 | 14 | `relationship()` | Navegação no ORM (`back_populates`), `TYPE_CHECKING` p/ evitar import circular. |
 | 15 | Remodelar venda | `ItemVenda` (vendedor por item, preço congelado), `alembic downgrade -1`. |
-| 16 | Endpoints (vendedores) | **Feito por mim**, replicando o padrão de produtos. |
+| 16 | Endpoints (vendedores) | **Feito por mim**, replicando o padrão de produtos (só `criar`, `listar`; depois `obter`, `atualizar`). |
+| 17 | Registrar venda | Schema **aninhado** (`VendaCreate` c/ `list[ItemVendaCreate]`), **transação** (um `commit` = tudo ou nada), **congelar preço** (`preco_unitario` copiado do produto no ato), `venda.itens.append` + *cascade* do `relationship`, e **erro de domínio no crud (`ValueError`) traduzido pra HTTP no router**. Inclui `listar` e `obter`. |
 
 ## Lições de depuração (pra levar pra vida)
 
