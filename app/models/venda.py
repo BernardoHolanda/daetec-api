@@ -5,6 +5,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
+from app.enums import FormaPagamento
 
 if TYPE_CHECKING:
     from app.models.item_venda import ItemVenda
@@ -17,5 +18,6 @@ class Venda(Base):
     data_hora: Mapped[datetime] = mapped_column(server_default=func.now())
 
     itens: Mapped[list["ItemVenda"]] = relationship(back_populates="venda")
+    forma_pagamento: Mapped[FormaPagamento]
 
     cancelada_em: Mapped[datetime | None]

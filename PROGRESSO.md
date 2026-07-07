@@ -53,12 +53,14 @@ então comandos dispensam o prefixo `docker compose exec api`.
 - ✅ Domínio de vendas modelado: `Venda` → `ItemVenda` (N) → `Produto`/`Vendedor`.
   **Vendedor é por item** (uma venda pode ter produtos de vários vendedores) e o
   `preco_unitario` fica **congelado** no item (histórico de preço).
-- ✅ Recurso **vendas**: `criar` (registrar, congela preço), `listar` (só ativas),
-  `obter`, `cancelar` (soft delete via `cancelada_em`). **Sem `atualizar`** de
-  propósito — venda é registro imutável (evento), não cadastro.
-- 🔜 Próximo (lição 19): **`forma_pagamento`** na venda (pix/dinheiro/débito/crédito).
-  Depois: a **conta** (fiado) e o **relatório** de fim de dia. Mais à frente:
-  testes (pytest), auth (JWT), frontend (Vue).
+- ✅ Recurso **vendas**: `criar` (congela preço, exige `forma_pagamento`),
+  `listar` (só ativas), `obter`, `cancelar` (soft delete via `cancelada_em`).
+  **Sem `atualizar`** — venda é registro imutável (evento), não cadastro.
+- ✅ **`forma_pagamento`** (Enum pix/dinheiro/débito/crédito), NOT NULL, validado
+  em duas camadas (Pydantic + ENUM nativo do Postgres).
+- 🔜 Próximo (lição 20): a **conta** (fiado) — consumo acumulado que depois vira
+  uma venda normal. Depois: **relatório** de fim de dia. Mais à frente: testes
+  (pytest), auth (JWT), frontend (Vue).
 
 ### Modelo de dados atual
 
@@ -109,6 +111,7 @@ docker compose up -d --build
 | 16 | Endpoints (vendedores) | **Feito por mim**, replicando o padrão de produtos (só `criar`, `listar`; depois `obter`, `atualizar`). |
 | 17 | Registrar venda | Schema **aninhado** (`VendaCreate` c/ `list[ItemVendaCreate]`), **transação** (um `commit` = tudo ou nada), **congelar preço** (`preco_unitario` copiado do produto no ato), `venda.itens.append` + *cascade* do `relationship`, e **erro de domínio no crud (`ValueError`) traduzido pra HTTP no router**. Inclui `listar` e `obter`. |
 | 18 | Cancelar venda (soft delete) + FK | **Integridade referencial** vista ao vivo (`DELETE` cru barrado pela FK). **Soft delete**: coluna nullable `cancelada_em` (migration segura porque nullable), `cancelar_venda` marca a data (não apaga), `listar` esconde canceladas (`.is_(None)`), `obter` mantém p/ auditoria. HTTP: cancelar devolve o recurso (**200 + `VendaRead`**), não 204 — contraste hard×soft delete. |
+| 19 | Forma de pagamento (Enum) | **Enum** (`class FormaPagamento(str, Enum)`) = conjunto fixo de valores; fonte única em `app/enums.py` (model + schema importam). Validação automática (valor inválido → 422, com mensagem que lista as opções) **em duas camadas**: Pydantic **e** tipo ENUM nativo do Postgres. Coluna **NOT NULL** obrigou limpar dados de teste antes (add NOT NULL em tabela com linhas falha). |
 
 ## Lições de depuração (pra levar pra vida)
 
@@ -128,3 +131,12 @@ docker compose up -d --build
   na versão crua, derrubando a conexão (VS Code trava tentando reconectar). Conserto:
   *Dev Containers: Rebuild and Reopen in Container*. Código Python nem precisa: o
   `fastapi dev` faz **hot reload** sozinho.
+- **Enum + Alembic no Postgres**: `op.add_column` com `sa.Enum` **não cria o tipo
+  ENUM sozinho** (só `create_table` cria). Falha com *"type X does not exist"*. No
+  `upgrade`: `sa.Enum(..., name='x').create(op.get_bind(), checkfirst=True)` antes,
+  e `create_type=False` no Enum da coluna. No `downgrade`: `sa.Enum(name='x').drop(...)`
+  além do `drop_column`. A revisão pode não pegar — o banco pega. E graças ao **DDL
+  transacional** do Postgres, uma migration que falha **desfaz tudo** (sem meio-caminho).
+- **Add coluna NOT NULL em tabela com dados** falha (não sabe o que pôr nas linhas
+  antigas). Em produção: nullable → backfill → NOT NULL. Em dev: limpar os dados
+  (filhos antes dos pais, por causa da FK) e migrar com a tabela vazia.

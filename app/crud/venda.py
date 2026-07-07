@@ -10,7 +10,7 @@ from app.schemas.venda import VendaCreate
 
 
 def criar_venda(db: Session, dados: VendaCreate) -> Venda:
-    venda = Venda()
+    venda = Venda(forma_pagamento=dados.forma_pagamento)
 
     for item in dados.itens:
         produto = db.get(Produto, item.produto_id)
