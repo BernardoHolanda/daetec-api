@@ -11,7 +11,7 @@ app.include_router(vendas.router)
 
 @app.get("/")
 def raiz():
-    return {"mensagem": "Olá mundo — DATEC API esta no ar, agora com host reload!"}
+    return {"mensagem": "Olá mundo — DATEC API esta no ar!"}
 
 @app.get("/health/db")
 def health_db():
