@@ -13,7 +13,8 @@ class ItemVendaCreate(BaseModel):
 
 
 class VendaCreate(BaseModel):
-    forma_pagamento: FormaPagamento
+    forma_pagamento: FormaPagamento | None = None
+    cliente_id: int | None = None
     itens: list[ItemVendaCreate]
 
 
@@ -30,8 +31,22 @@ class ItemVendaRead(BaseModel):
 class VendaRead(BaseModel):
     id: int
     data_hora: datetime
-    forma_pagamento: FormaPagamento
+    forma_pagamento: FormaPagamento | None
+    cliente_id: int | None
+    paga_em: datetime | None
     cancelada_em: datetime | None
     itens: list[ItemVendaRead]
 
     model_config = {"from_attributes": True}
+
+
+class ContaRead(BaseModel):
+    cliente_id: int
+    total: Decimal
+    vendas: list[VendaRead]
+
+    model_config = {"from_attributes": True}
+
+
+class FecharConta(BaseModel):
+    forma_pagamento: FormaPagamento

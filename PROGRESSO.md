@@ -2,7 +2,7 @@
 
 > Registro do aprendizado e do estado do projeto (backend).
 > Para o **o quê/porquê** do produto, veja `../DEFINICAO.md`.
-> Última atualização: 2026-07-07
+> Última atualização: 2026-07-09
 
 ## Stack
 
@@ -56,11 +56,18 @@ então comandos dispensam o prefixo `docker compose exec api`.
 - ✅ Recurso **vendas**: `criar` (congela preço, exige `forma_pagamento`),
   `listar` (só ativas), `obter`, `cancelar` (soft delete via `cancelada_em`).
   **Sem `atualizar`** — venda é registro imutável (evento), não cadastro.
-- ✅ **`forma_pagamento`** (Enum pix/dinheiro/débito/crédito), NOT NULL, validado
-  em duas camadas (Pydantic + ENUM nativo do Postgres).
-- 🔜 Próximo (lição 20): a **conta** (fiado) — consumo acumulado que depois vira
-  uma venda normal. Depois: **relatório** de fim de dia. Mais à frente: testes
-  (pytest), auth (JWT), frontend (Vue).
+- ✅ **`forma_pagamento`** (Enum pix/dinheiro/débito/crédito), validado em duas
+  camadas (Pydantic + ENUM nativo do Postgres). **Anulável** desde a lição 20:
+  venda fiado ainda não tem forma de pagamento (só se sabe no fechamento).
+- ✅ Recurso **clientes** (criar, listar, obter, atualizar) — cadastro igual ao
+  vendedor. Sem `deletar` (mesma armadilha de FK).
+- ✅ **Conta / fiado** (Opção A: venda "na conta" é só uma venda com dono e ainda
+  não paga). `Venda` ganhou `cliente_id` (nullable FK) e `paga_em` (nullable).
+  `criar_venda` decide fiado×à vista; `GET /clientes/{id}/conta` é uma **visão
+  calculada** (soma das vendas em aberto); `POST /clientes/{id}/conta/fechar`
+  quita tudo num **update em lote** (um só `commit`, mesmo `paga_em`).
+- 🔜 Próximo: **relatório** de fim de dia (total vendido, por vendedor, por forma
+  de pagamento). Mais à frente: testes (pytest), auth (JWT), frontend (Vue).
 
 ### Modelo de dados atual
 
@@ -68,6 +75,9 @@ então comandos dispensam o prefixo `docker compose exec api`.
 Vendedor ─1:N─ ItemVenda ─N:1─ Produto
                    │
 Venda ────1:N──────┘   (ItemVenda: quantidade, preco_unitario congelado)
+  │
+  └─N:1─ Cliente   (cliente_id nullable: NULL = à vista; preenchido = fiado)
+                   (paga_em nullable: NULL = em aberto; data = quitada)
 ```
 
 ## Comandos úteis
@@ -112,6 +122,7 @@ docker compose up -d --build
 | 17 | Registrar venda | Schema **aninhado** (`VendaCreate` c/ `list[ItemVendaCreate]`), **transação** (um `commit` = tudo ou nada), **congelar preço** (`preco_unitario` copiado do produto no ato), `venda.itens.append` + *cascade* do `relationship`, e **erro de domínio no crud (`ValueError`) traduzido pra HTTP no router**. Inclui `listar` e `obter`. |
 | 18 | Cancelar venda (soft delete) + FK | **Integridade referencial** vista ao vivo (`DELETE` cru barrado pela FK). **Soft delete**: coluna nullable `cancelada_em` (migration segura porque nullable), `cancelar_venda` marca a data (não apaga), `listar` esconde canceladas (`.is_(None)`), `obter` mantém p/ auditoria. HTTP: cancelar devolve o recurso (**200 + `VendaRead`**), não 204 — contraste hard×soft delete. |
 | 19 | Forma de pagamento (Enum) | **Enum** (`class FormaPagamento(str, Enum)`) = conjunto fixo de valores; fonte única em `app/enums.py` (model + schema importam). Validação automática (valor inválido → 422, com mensagem que lista as opções) **em duas camadas**: Pydantic **e** tipo ENUM nativo do Postgres. Coluna **NOT NULL** obrigou limpar dados de teste antes (add NOT NULL em tabela com linhas falha). |
+| 20 | Conta / fiado | Cadastro de **cliente** (exercício solo). **Opção A de modelagem**: venda "na conta" é só uma `Venda` com `cliente_id` (nullable FK) e `paga_em` (nullable) — sem tabela paralela, reaproveita tudo. Requisito novo (fiado) **afrouxou** `forma_pagamento` pra nullable (software evolui). `criar_venda` com **dois caminhos** (fiado × à vista). `GET /clientes/{id}/conta` = **visão calculada** (não mapeia tabela; soma `quantidade × preço` das vendas em aberto; `Decimal("0")` de base). `POST .../conta/fechar` = **update em lote numa transação** (loop + um `commit` = mesmo `paga_em` em todas). Colunas nullable → migration segura mesmo com dados; autogenerate acertou sozinho (`alter_column` afrouxando NOT NULL + FK). |
 
 ## Lições de depuração (pra levar pra vida)
 

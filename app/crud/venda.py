@@ -6,11 +6,29 @@ from datetime import datetime, timezone
 from app.models.produto import Produto
 from app.models.venda import Venda
 from app.models.item_venda import ItemVenda
+from app.models.cliente import Cliente
 from app.schemas.venda import VendaCreate
+from app.enums import FormaPagamento
 
 
 def criar_venda(db: Session, dados: VendaCreate) -> Venda:
-    venda = Venda(forma_pagamento=dados.forma_pagamento)
+    if dados.cliente_id is not None:
+        cliente = db.get(Cliente, dados.cliente_id)
+        if cliente is None:
+            raise ValueError(f"Cliente {dados.cliente_id} não existe")
+        forma_pagamento = None
+        paga_em = None
+    else:
+        if dados.forma_pagamento is None:
+            raise ValueError("Venda à vista exige forma_pagamento")
+        forma_pagamento = dados.forma_pagamento
+        paga_em = datetime.now(timezone.utc)
+
+    venda = Venda(
+        forma_pagamento=forma_pagamento,
+        cliente_id=dados.cliente_id,
+        paga_em=paga_em,
+    )
 
     for item in dados.itens:
         produto = db.get(Produto, item.produto_id)
@@ -45,3 +63,31 @@ def cancelar_venda(db: Session, venda: Venda) -> Venda:
     db.commit()
     db.refresh(venda)
     return venda
+
+
+def listar_conta(db: Session, cliente_id: int) -> list[Venda]:
+    return list(
+        db.scalars(
+            select(Venda).where(
+                Venda.cliente_id == cliente_id,
+                Venda.paga_em.is_(None),
+                Venda.cancelada_em.is_(None),
+            )
+        ).all()
+    )
+
+
+def fechar_conta(db: Session, cliente_id: int, forma_pagamento: FormaPagamento) -> list[Venda]:
+    vendas = listar_conta(db, cliente_id)
+    if not vendas:
+        raise ValueError("Cliente não tem conta em aberto")
+
+    agora = datetime.now(timezone.utc)
+    for venda in vendas:
+        venda.paga_em = agora
+        venda.forma_pagamento = forma_pagamento
+
+    db.commit()
+    for venda in vendas:
+        db.refresh(venda)
+    return vendas
