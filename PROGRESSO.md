@@ -2,7 +2,7 @@
 
 > Registro do aprendizado e do estado do projeto (backend).
 > Para o **o quê/porquê** do produto, veja `../DEFINICAO.md`.
-> Última atualização: 2026-07-09
+> Última atualização: 2026-07-20
 
 ## Stack
 
@@ -66,8 +66,13 @@ então comandos dispensam o prefixo `docker compose exec api`.
   `criar_venda` decide fiado×à vista; `GET /clientes/{id}/conta` é uma **visão
   calculada** (soma das vendas em aberto); `POST /clientes/{id}/conta/fechar`
   quita tudo num **update em lote** (um só `commit`, mesmo `paga_em`).
-- 🔜 Próximo: **relatório** de fim de dia (total vendido, por vendedor, por forma
-  de pagamento). Mais à frente: testes (pytest), auth (JWT), frontend (Vue).
+- ✅ **Relatório de fim de dia** (`GET /relatorio?dia=`): quebra **por vendedor**
+  (agrega no nível do `ItemVenda`), com **recebido** (por forma, filtrado por
+  `paga_em`) **separado** da **conta em aberto** (por cliente, saldo acumulado,
+  sem filtro de data) + seção de **devedores**. Agregação (`SUM`/`GROUP BY`) feita
+  no **Postgres**, não no Python. Fiado quitado **migra** de "conta" p/ "recebido"
+  no dia do pagamento (provado ao vivo).
+- 🔜 Próximo: **testes** (pytest) e **auth** (JWT). Depois: frontend (Vue).
 
 ### Modelo de dados atual
 
@@ -123,6 +128,7 @@ docker compose up -d --build
 | 18 | Cancelar venda (soft delete) + FK | **Integridade referencial** vista ao vivo (`DELETE` cru barrado pela FK). **Soft delete**: coluna nullable `cancelada_em` (migration segura porque nullable), `cancelar_venda` marca a data (não apaga), `listar` esconde canceladas (`.is_(None)`), `obter` mantém p/ auditoria. HTTP: cancelar devolve o recurso (**200 + `VendaRead`**), não 204 — contraste hard×soft delete. |
 | 19 | Forma de pagamento (Enum) | **Enum** (`class FormaPagamento(str, Enum)`) = conjunto fixo de valores; fonte única em `app/enums.py` (model + schema importam). Validação automática (valor inválido → 422, com mensagem que lista as opções) **em duas camadas**: Pydantic **e** tipo ENUM nativo do Postgres. Coluna **NOT NULL** obrigou limpar dados de teste antes (add NOT NULL em tabela com linhas falha). |
 | 20 | Conta / fiado | Cadastro de **cliente** (exercício solo). **Opção A de modelagem**: venda "na conta" é só uma `Venda` com `cliente_id` (nullable FK) e `paga_em` (nullable) — sem tabela paralela, reaproveita tudo. Requisito novo (fiado) **afrouxou** `forma_pagamento` pra nullable (software evolui). `criar_venda` com **dois caminhos** (fiado × à vista). `GET /clientes/{id}/conta` = **visão calculada** (não mapeia tabela; soma `quantidade × preço` das vendas em aberto; `Decimal("0")` de base). `POST .../conta/fechar` = **update em lote numa transação** (loop + um `commit` = mesmo `paga_em` em todas). Colunas nullable → migration segura mesmo com dados; autogenerate acertou sozinho (`alter_column` afrouxando NOT NULL + FK). |
+| 21 | Relatório (agregação) | **Agregação no banco** em vez de somar no Python: `func.sum(a*b)`, `func.coalesce(sum, 0)`, `.join(Venda, ...)`, `.group_by(...)` com 1 e **2 colunas**. O trio **`db.scalar`** (1 valor) × **`db.scalars`** (1 coluna) × **`db.execute(...).all()`** (linhas inteiras). Remontar linhas achatadas em dict aninhado com **`setdefault(k, {})[k2] = v`**. **Recebido** (por `paga_em`, fiado sai sozinho pois `NULL >= x` é falso) **separado** da **conta em aberto** (sem data, saldo acumulado). Montagem: **query param opcional** `?dia=` (3º jeito de receber dado, além de path e body) c/ default `date.today()`, de-para `{id: nome}`, **união de chaves** `set(a) \| set(b)`. Anotação de tipo (`-> Decimal`) é avaliada **no import** — nome indefinido derruba o app. |
 
 ## Lições de depuração (pra levar pra vida)
 

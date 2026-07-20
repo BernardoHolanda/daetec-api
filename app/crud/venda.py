@@ -1,7 +1,8 @@
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from datetime import datetime, timezone
+from datetime import date, datetime, time, timezone
+from decimal import Decimal
 
 from app.models.produto import Produto
 from app.models.venda import Venda
@@ -25,9 +26,9 @@ def criar_venda(db: Session, dados: VendaCreate) -> Venda:
         paga_em = datetime.now(timezone.utc)
 
     venda = Venda(
-        forma_pagamento=forma_pagamento,
-        cliente_id=dados.cliente_id,
-        paga_em=paga_em,
+        forma_pagamento = forma_pagamento,
+        cliente_id = dados.cliente_id,
+        paga_em = paga_em,
     )
 
     for item in dados.itens:
@@ -37,10 +38,10 @@ def criar_venda(db: Session, dados: VendaCreate) -> Venda:
 
         venda.itens.append(
             ItemVenda(
-                produto_id=item.produto_id,
-                vendedor_id=item.vendedor_id,
-                quantidade=item.quantidade,
-                preco_unitario=produto.preco,
+                produto_id = item.produto_id,
+                vendedor_id = item.vendedor_id,
+                quantidade = item.quantidade,
+                preco_unitario = produto.preco,
             )
         )
 
@@ -91,3 +92,91 @@ def fechar_conta(db: Session, cliente_id: int, forma_pagamento: FormaPagamento) 
     for venda in vendas:
         db.refresh(venda)
     return vendas
+
+
+def recebido_do_dia(db: Session, dia: date) -> Decimal:
+    inicio = datetime.combine(dia, time.min)
+    fim = datetime.combine(dia, time.max)
+
+    return db.scalar(
+        select(
+            func.coalesce(
+                func.sum(ItemVenda.quantidade * ItemVenda.preco_unitario),
+                0,
+            )
+        )
+        .join(Venda, ItemVenda.venda_id == Venda.id)
+        .where(
+            Venda.paga_em >= inicio,
+            Venda.paga_em <= fim,
+            Venda.cancelada_em.is_(None),
+        )
+    )
+
+
+def recebido_por_forma(db: Session, dia: date) -> dict[FormaPagamento, Decimal]:
+    inicio = datetime.combine(dia, time.min)
+    fim = datetime.combine(dia, time.max)
+
+    linhas = db.execute(
+        select(
+            Venda.forma_pagamento,
+            func.sum(ItemVenda.quantidade * ItemVenda.preco_unitario),
+        )
+        .join(Venda, ItemVenda.venda_id == Venda.id)
+        .where(
+            Venda.paga_em >= inicio,
+            Venda.paga_em <= fim,
+            Venda.cancelada_em.is_(None),
+        )
+        .group_by(Venda.forma_pagamento)
+    ).all()
+
+    return {forma: total for forma, total in linhas}
+
+
+def recebido_por_vendedor(db: Session, dia: date) -> dict[int, dict[FormaPagamento, Decimal]]:
+    inicio = datetime.combine(dia, time.min)
+    fim = datetime.combine(dia, time.max)
+
+    linhas = db.execute(
+        select(
+            ItemVenda.vendedor_id,
+            Venda.forma_pagamento,
+            func.sum(ItemVenda.quantidade * ItemVenda.preco_unitario),
+        )
+        .join(Venda, ItemVenda.venda_id == Venda.id)
+        .where(
+            Venda.paga_em >= inicio,
+            Venda.paga_em <= fim,
+            Venda.cancelada_em.is_(None),
+        )
+        .group_by(ItemVenda.vendedor_id, Venda.forma_pagamento)
+    ).all()
+
+    resultado: dict[int, dict[FormaPagamento, Decimal]] = {}
+    for vendedor_id, forma, total in linhas:
+        resultado.setdefault(vendedor_id, {})[forma] = total
+    return resultado
+
+
+def contas_abertas_por_vendedor(db: Session) -> dict[int, dict[int, Decimal]]:
+    linhas = db.execute(
+        select(
+            ItemVenda.vendedor_id,
+            Venda.cliente_id,
+            func.sum(ItemVenda.quantidade * ItemVenda.preco_unitario),
+        )
+        .join(Venda, ItemVenda.venda_id == Venda.id)
+        .where(
+            Venda.paga_em.is_(None),
+            Venda.cliente_id.is_not(None),
+            Venda.cancelada_em.is_(None),
+        )
+        .group_by(ItemVenda.vendedor_id, Venda.cliente_id)
+    ).all()
+
+    resultado: dict[int, dict[int, Decimal]] = {}
+    for vendedor_id, cliente_id, total in linhas:
+        resultado.setdefault(vendedor_id, {})[cliente_id] = total
+    return resultado
