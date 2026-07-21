@@ -2,7 +2,7 @@
 
 > Registro do aprendizado e do estado do projeto (backend).
 > Para o **o quê/porquê** do produto, veja `../DEFINICAO.md`.
-> Última atualização: 2026-07-20
+> Última atualização: 2026-07-21
 
 ## Stack
 
@@ -72,7 +72,15 @@ então comandos dispensam o prefixo `docker compose exec api`.
   sem filtro de data) + seção de **devedores**. Agregação (`SUM`/`GROUP BY`) feita
   no **Postgres**, não no Python. Fiado quitado **migra** de "conta" p/ "recebido"
   no dia do pagamento (provado ao vivo).
-- 🔜 Próximo: **testes** (pytest) e **auth** (JWT). Depois: frontend (Vue).
+- ✅ **Autenticação — base** (lição 22): `Usuario` **independente** (sem vínculo
+  com vendedor), com `papel` (Enum admin/comum) → base de **RBAC** (comum vende;
+  admin cria/altera/deleta/relatório). Senha **nunca** em texto puro: `senha_hash`
+  com **bcrypt** (salt embutido, lento de propósito), em `app/security.py`
+  (`hash_senha`/`verificar_senha`). Schema **assimétrico**: `senha` só entra
+  (`UsuarioCreate`), nunca sai (`UsuarioRead` sem hash + `response_model` como 2ª
+  barreira). `criar_usuario` faz a **ponte** senha→hash.
+- 🔜 Próximo: **login + JWT** (lição 23), **proteger rotas** (24), **papéis/RBAC**
+  (25). Depois: **testes** (pytest) e frontend (Vue).
 
 ### Modelo de dados atual
 
@@ -83,6 +91,9 @@ Venda ────1:N──────┘   (ItemVenda: quantidade, preco_unita
   │
   └─N:1─ Cliente   (cliente_id nullable: NULL = à vista; preenchido = fiado)
                    (paga_em nullable: NULL = em aberto; data = quitada)
+
+Usuario   (isolado: username único, senha_hash, papel admin/comum)
+          (NÃO liga a vendedor — só autenticação/autorização; base do login/RBAC)
 ```
 
 ## Comandos úteis
@@ -129,6 +140,7 @@ docker compose up -d --build
 | 19 | Forma de pagamento (Enum) | **Enum** (`class FormaPagamento(str, Enum)`) = conjunto fixo de valores; fonte única em `app/enums.py` (model + schema importam). Validação automática (valor inválido → 422, com mensagem que lista as opções) **em duas camadas**: Pydantic **e** tipo ENUM nativo do Postgres. Coluna **NOT NULL** obrigou limpar dados de teste antes (add NOT NULL em tabela com linhas falha). |
 | 20 | Conta / fiado | Cadastro de **cliente** (exercício solo). **Opção A de modelagem**: venda "na conta" é só uma `Venda` com `cliente_id` (nullable FK) e `paga_em` (nullable) — sem tabela paralela, reaproveita tudo. Requisito novo (fiado) **afrouxou** `forma_pagamento` pra nullable (software evolui). `criar_venda` com **dois caminhos** (fiado × à vista). `GET /clientes/{id}/conta` = **visão calculada** (não mapeia tabela; soma `quantidade × preço` das vendas em aberto; `Decimal("0")` de base). `POST .../conta/fechar` = **update em lote numa transação** (loop + um `commit` = mesmo `paga_em` em todas). Colunas nullable → migration segura mesmo com dados; autogenerate acertou sozinho (`alter_column` afrouxando NOT NULL + FK). |
 | 21 | Relatório (agregação) | **Agregação no banco** em vez de somar no Python: `func.sum(a*b)`, `func.coalesce(sum, 0)`, `.join(Venda, ...)`, `.group_by(...)` com 1 e **2 colunas**. O trio **`db.scalar`** (1 valor) × **`db.scalars`** (1 coluna) × **`db.execute(...).all()`** (linhas inteiras). Remontar linhas achatadas em dict aninhado com **`setdefault(k, {})[k2] = v`**. **Recebido** (por `paga_em`, fiado sai sozinho pois `NULL >= x` é falso) **separado** da **conta em aberto** (sem data, saldo acumulado). Montagem: **query param opcional** `?dia=` (3º jeito de receber dado, além de path e body) c/ default `date.today()`, de-para `{id: nome}`, **união de chaves** `set(a) \| set(b)`. Anotação de tipo (`-> Decimal`) é avaliada **no import** — nome indefinido derruba o app. |
+| 22 | Auth — senha/hash | `Usuario` **standalone** (sem FK p/ vendedor) + `papel` (Enum admin/comum) = base de **RBAC**. **Hash de senha** com **bcrypt** (`hash_senha`/`verificar_senha` em `app/security.py`): transformação **só de ida**, **salt** embutido no próprio hash (`$2b$12$…`), lento de propósito — igual `password_hash()` do PHP. Schema **assimétrico**: senha entra crua (`UsuarioCreate`), **nunca** sai (`UsuarioRead` sem hash + `response_model` como 2ª barreira). `criar_usuario` é a **ponte** senha→hash. Migration: `create_table` **cria o tipo ENUM sozinho** (≠ `add_column` da lição 19). Dependência nova (`bcrypt`) → **rebuild** do container (via *Dev Containers: Rebuild*). |
 
 ## Lições de depuração (pra levar pra vida)
 

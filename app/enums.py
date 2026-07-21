@@ -6,3 +6,8 @@ class FormaPagamento(str, Enum):
     DINHEIRO = "dinheiro"
     DEBITO = "debito"
     CREDITO = "credito"
+
+
+class PapelUsuario(str, Enum):
+    ADMIN = "admin"
+    COMUM = "comum"
