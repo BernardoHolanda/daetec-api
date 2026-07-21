@@ -1,13 +1,18 @@
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from datetime import date, datetime, time, timezone
+from datetime import date, datetime, time, timedelta, timezone
 from decimal import Decimal
+
+# Manaus é UTC−4 o ano inteiro (sem horário de verão). O "dia" do relatório
+# é um dia do calendário de Manaus, não um dia UTC.
+FUSO_MANAUS = timezone(timedelta(hours=-4))
 
 from app.models.produto import Produto
 from app.models.venda import Venda
 from app.models.item_venda import ItemVenda
 from app.models.cliente import Cliente
+from app.models.vendedor import Vendedor
 from app.schemas.venda import VendaCreate
 from app.enums import FormaPagamento
 
@@ -33,6 +38,9 @@ def criar_venda(db: Session, dados: VendaCreate) -> Venda:
 
     for item in dados.itens:
         produto = db.get(Produto, item.produto_id)
+        vendedor = db.get(Vendedor, item.vendedor_id)
+        if vendedor is None:
+            raise ValueError(f"Vendedor {item.vendedor_id} não existe")
         if produto is None:
             raise ValueError(f"Produto {item.produto_id} não existe")
 
@@ -95,8 +103,8 @@ def fechar_conta(db: Session, cliente_id: int, forma_pagamento: FormaPagamento) 
 
 
 def recebido_do_dia(db: Session, dia: date) -> Decimal:
-    inicio = datetime.combine(dia, time.min)
-    fim = datetime.combine(dia, time.max)
+    inicio = datetime.combine(dia, time.min, tzinfo=FUSO_MANAUS)
+    fim = datetime.combine(dia, time.max, tzinfo=FUSO_MANAUS)
 
     return db.scalar(
         select(
@@ -115,8 +123,8 @@ def recebido_do_dia(db: Session, dia: date) -> Decimal:
 
 
 def recebido_por_forma(db: Session, dia: date) -> dict[FormaPagamento, Decimal]:
-    inicio = datetime.combine(dia, time.min)
-    fim = datetime.combine(dia, time.max)
+    inicio = datetime.combine(dia, time.min, tzinfo=FUSO_MANAUS)
+    fim = datetime.combine(dia, time.max, tzinfo=FUSO_MANAUS)
 
     linhas = db.execute(
         select(
@@ -136,8 +144,8 @@ def recebido_por_forma(db: Session, dia: date) -> dict[FormaPagamento, Decimal]:
 
 
 def recebido_por_vendedor(db: Session, dia: date) -> dict[int, dict[FormaPagamento, Decimal]]:
-    inicio = datetime.combine(dia, time.min)
-    fim = datetime.combine(dia, time.max)
+    inicio = datetime.combine(dia, time.min, tzinfo=FUSO_MANAUS)
+    fim = datetime.combine(dia, time.max, tzinfo=FUSO_MANAUS)
 
     linhas = db.execute(
         select(

@@ -1,8 +1,10 @@
 from pydantic import BaseModel
 
+from app.schemas.common import NomeNormalizado
+
 
 class VendedorBase(BaseModel):
-    nome: str
+    nome: NomeNormalizado
 
 
 class VendedorCreate(VendedorBase):

@@ -12,7 +12,10 @@ router = APIRouter(prefix="/usuarios", tags=["usuarios"])
 
 @router.post("", response_model=UsuarioRead, dependencies=[Depends(exigir_admin)])
 def criar_usuario(dados: UsuarioCreate, db: Session = Depends(get_db)):
-    return crud_usuario.criar_usuario(db, dados)
+    try:
+        return crud_usuario.criar_usuario(db, dados)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.get("", response_model=list[UsuarioRead], dependencies=[Depends(exigir_admin)])

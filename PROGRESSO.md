@@ -93,7 +93,26 @@ então comandos dispensam o prefixo `docker compose exec api`.
   decorador) ou por router inteiro (relatório). Regra: **comum vende + lê**; **admin
   cria/altera/deleta + relatório**. `POST /clientes` (abrir conta) e fechar conta
   ficam **livres** (fazem parte de vender); `PUT /clientes` é admin (gestão).
-- 🔜 Próximo: **testes** (pytest). Depois: frontend (Vue).
+- ✅ **Robustez — validação + erros** (lição 26): auditoria de entradas ruins →
+  fechados 3 buracos que davam **500 cru**. **Categoria A (borda/Pydantic → 422)**:
+  `Field(min_length=1)` nos itens (barra venda vazia) e `Field(gt=0)` na quantidade.
+  **Categoria B (domínio/crud → 400)**: validação do **vendedor** no `criar_venda`
+  (espelha produto/cliente) e **username duplicado** no `criar_usuario`
+  (checar-antes-de-inserir; o `unique` do banco é a rede de segurança, a checagem
+  dá o erro bonito). Router traduz `ValueError → 400`.
+- ✅ **Timestamps com fuso** (lição 27): colunas de data viraram `timestamptz`
+  (`DateTime(timezone=True)`) → API devolve com `Z` (UTC), front converte pro local.
+  Migration com `postgresql_using "col AT TIME ZONE 'UTC'"` (os naive já eram UTC).
+  O **"dia" do relatório** passou a ser dia de **Manaus** (UTC−4 fixo, sem DST —
+  `FUSO_MANAUS`), não dia UTC — senão o corte cairia às 20h local.
+- ✅ **Blindagem do banco** (lição 28): o **backend é o dono da integridade, nunca
+  o front** (front é burlável). Nomes **normalizados** (`strip().upper()` via um tipo
+  reutilizável `Annotated[str, AfterValidator]`) → "batata"="BATATA". `preco` e
+  `quantidade` com `Field(gt=0)`. **UNIQUE** em `produto`/`vendedor`/`cliente.nome`
+  (migration **à mão** — autogenerate não detecta UNIQUE) + **handler global** de
+  `IntegrityError` → **409** (nenhuma violação vaza como 500).
+- 🔜 Próximo: **seed** (admin inicial idempotente). Depois: **testes** (pytest) e
+  frontend (Vue).
 
 ### Modelo de dados atual
 
@@ -156,6 +175,9 @@ docker compose up -d --build
 | 22 | Auth — senha/hash | `Usuario` **standalone** (sem FK p/ vendedor) + `papel` (Enum admin/comum) = base de **RBAC**. **Hash de senha** com **bcrypt** (`hash_senha`/`verificar_senha` em `app/security.py`): transformação **só de ida**, **salt** embutido no próprio hash (`$2b$12$…`), lento de propósito — igual `password_hash()` do PHP. Schema **assimétrico**: senha entra crua (`UsuarioCreate`), **nunca** sai (`UsuarioRead` sem hash + `response_model` como 2ª barreira). `criar_usuario` é a **ponte** senha→hash. Migration: `create_table` **cria o tipo ENUM sozinho** (≠ `add_column` da lição 19). Dependência nova (`bcrypt`) → **rebuild** do container (via *Dev Containers: Rebuild*). |
 | 23 | Login + JWT | **JWT** = `header.payload.signature`; **assinado, não criptografado** (o payload é base64 legível — nada de segredo lá; o que protege é a **assinatura** com `JWT_SECRET`). **Stateless** (servidor não guarda sessão). `criar_token` (`jwt.encode`, HS256, claims `sub`/`papel`/`exp`; PyJWT converte `datetime`→timestamp e valida `exp` sozinho). `POST /login` usa **`OAuth2PasswordRequestForm`** (form-data, não JSON — é o que faz o *Authorize* do `/docs` funcionar depois). **Erro único** pros dois casos (senha errada × user inexistente) → não enumera usernames. `pyjwt` novo → rebuild. |
 | 24 | Proteger rotas | Dependência **`get_current_user`** (`app/dependencies.py`): **`OAuth2PasswordBearer`** lê o header `Authorization: Bearer`; `jwt.decode` valida assinatura **e** `exp`; re-busca o usuário no banco (token válido mas user apagado → barra). Erro → **401** (+ `WWW-Authenticate: Bearer`). Usa-se com `Depends(get_current_user)`. **Ordem de rota**: `/me` **antes** de `/{id}` (senão `"me"` cai no parse de int → 422). Reforço do nugget da lição 21: **default de parâmetro é avaliado na definição** — `Depends(get_current_user)` exige a função **acima**. |
+| 28 | Blindar o banco | **Backend é o dono da integridade, nunca o front** (front é burlável). **Normalizar × validar**: dá pra consertar sozinho (caixa/espaços) → **normaliza** (`Annotated[str, AfterValidator(strip+upper)]`, tipo reutilizável); não dá (preço 0, vazio) → **rejeita 422** (`Field(gt=0)`). **UNIQUE** em produto/vendedor/cliente.nome (decisão: todos únicos no contexto pequeno). Pegadinha: **autogenerate NÃO gera constraint UNIQUE** — migration escrita à mão (`drop_index` do índice comum + `create_unique_constraint`). **Handler global** `@app.exception_handler(IntegrityError)` → **409**: rede de segurança única, nenhum 500 vaza. Limpar dados de teste antes (constraint não entra em tabela suja). |
+| 27 | Timestamps com fuso | `TIMESTAMP WITHOUT TIME ZONE` **descarta o fuso** → a API devolvia hora "solta" (sem `Z`/offset) e o front poderia errar o dia. Fix: `DateTime(timezone=True)` → `timestamptz` (guarda o **instante absoluto** em UTC e emite o offset). O código já gravava `datetime.now(timezone.utc)` (a parte difícil já estava certa). Migration: o autogenerate detecta o **tipo** mas não a **conversão dos dados** → `postgresql_using="col AT TIME ZONE 'UTC'"` declara que os valores naive eram UTC. Domínio: o **"dia" do relatório** virou dia de **Manaus** (`FUSO_MANAUS`, UTC−4 fixo) via `datetime.combine(dia, ..., tzinfo=...)` — comparar aware×`timestamptz` funciona; naive cairia no fuso da sessão. |
+| 26 | Robustez (validação + erros) | **Auditar batendo na API com entradas ruins** — erro que não grita é o pior (venda de itens vazios criava uma venda-fantasma 201). Dois baldes: **A) entrada malformada** → barra no **schema (Pydantic `Field`)** → **422** declarativo (`Field(min_length=1)`, `Field(gt=0)`); **B) erro de domínio** (dado válido que viola regra) → barra no **crud** com `ValueError` → router traduz p/ **400** (validar vendedor; username duplicado via checar-antes-de-inserir). Camadas de defesa: `unique` do banco (garantia) + checagem no código (mensagem bonita). Ressalva: checar-e-inserir tem corrida teórica; à prova de corrida = capturar `IntegrityError`. |
 | 25 | RBAC / papéis | **Autenticação × autorização**: **401** = "não sei quem é você"; **403** = "sei, mas você não pode". `exigir_admin` **encadeia** em `get_current_user` e checa `papel` → 403. Aplicação **por rota** (`dependencies=[Depends(exigir_admin)]` no decorador, quando não precisa do usuário) ou **por router inteiro** (relatório). Mapa: comum **vende + lê**; admin **escreve cadastros + relatório + cancela venda**. Refino de domínio: **abrir cliente** e **fechar conta** = livres (é vender); **alterar** cadastro = admin. Critério p/ decidir: *"isso trava uma venda?"*. |
 
 ## Lições de depuração (pra levar pra vida)
@@ -194,3 +216,13 @@ docker compose up -d --build
 - **Segredo assina, não esconde** — o payload de um JWT é base64 **legível por
   qualquer um**. Nunca ponha dado sensível nele; o que impede forjar é a assinatura
   com `JWT_SECRET` (mudou 1 byte do token → 401).
+- **Autogenerate tem pontos cegos** — não detecta constraint **UNIQUE** (escreve à
+  mão) nem CHECK. E a migration reflete o model **no instante em que foi gerada**:
+  mudar o model depois exige nova revisão; editar o arquivo já aplicado não re-roda
+  (use `alembic stamp <rev>` p/ mover só o ponteiro e então `upgrade`). Sempre
+  **testar de verdade** (inserir a duplicata), não confiar em "gerou = protegeu".
+- **Reconstruir do zero é o teste real** (`downgrade base → upgrade head`): pegou 2
+  bugs invisíveis no dia-a-dia — (1) `drop_constraint(None, ...)` de FK **sem nome**
+  → dar o nome real (`<tabela>_<coluna>_fkey`); (2) `drop_table` de tabela com ENUM
+  **deixa o tipo órfão** → o downgrade tem que `sa.Enum(name='x').drop(op.get_bind())`
+  (contraparte da armadilha da lição 19).

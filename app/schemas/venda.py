@@ -1,7 +1,7 @@
 from datetime import datetime
 from decimal import Decimal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from app.enums import FormaPagamento
 
@@ -9,13 +9,13 @@ from app.enums import FormaPagamento
 class ItemVendaCreate(BaseModel):
     produto_id: int
     vendedor_id: int
-    quantidade: int
+    quantidade: int = Field(gt=0)
 
 
 class VendaCreate(BaseModel):
     forma_pagamento: FormaPagamento | None = None
     cliente_id: int | None = None
-    itens: list[ItemVendaCreate]
+    itens: list[ItemVendaCreate] = Field(min_length=1)
 
 
 class ItemVendaRead(BaseModel):
