@@ -11,7 +11,7 @@ def criar_usuario(db: Session, dados: UsuarioCreate) -> Usuario:
     if buscar_por_username(db, dados.username) is not None:
         raise ValueError(f"Username '{dados.username}' já está em uso")
     
-    usuario = Usuario(username=dados.username, senha_hash=hash_senha(dados.senha), papel=dados.papel)
+    usuario = Usuario(username=dados.username, email=dados.email, senha_hash=hash_senha(dados.senha), papel=dados.papel)
     db.add(usuario)
     db.commit()
     db.refresh(usuario)

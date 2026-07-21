@@ -1,15 +1,17 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr
 
+from app.schemas.common import SenhaForte
 from app.enums import PapelUsuario
 
 
 class UsuarioBase(BaseModel):
     username: str
+    email: EmailStr
     papel: PapelUsuario
 
 
 class UsuarioCreate(UsuarioBase):
-    senha: str
+    senha: SenhaForte
 
 
 class UsuarioRead(UsuarioBase):

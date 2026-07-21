@@ -20,6 +20,7 @@ from app.security import hash_senha
 def criar_admin_inicial(db) -> None:
     username = os.getenv("ADMIN_USERNAME", "admin")
     senha = os.getenv("ADMIN_PASSWORD")
+    email = os.getenv("ADMIN_EMAIL", "admin@daetec.com")
 
     if not senha:
         raise SystemExit("ADMIN_PASSWORD não definido no .env — abortando.")
@@ -32,6 +33,7 @@ def criar_admin_inicial(db) -> None:
     db.add(
         Usuario(
             username=username,
+            email=email,
             senha_hash=hash_senha(senha),
             papel=PapelUsuario.ADMIN,
         )

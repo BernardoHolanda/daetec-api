@@ -4,3 +4,4 @@ psycopg[binary]
 alembic
 bcrypt
 pyjwt
+email-validator

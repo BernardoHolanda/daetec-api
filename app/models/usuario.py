@@ -9,5 +9,6 @@ class Usuario(Base):
     
     id: Mapped[int] = mapped_column(primary_key=True)
     username: Mapped[str] = mapped_column(unique=True, index=True)
+    email: Mapped[str] = mapped_column(unique=True)
     senha_hash: Mapped[str]
     papel: Mapped[PapelUsuario]
