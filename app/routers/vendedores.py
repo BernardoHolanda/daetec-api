@@ -3,10 +3,10 @@ from sqlalchemy.orm import Session
 
 from app.crud import vendedor as crud_vendedor
 from app.database import get_db
-from app.dependencies import exigir_admin
+from app.dependencies import exigir_admin, get_current_user
 from app.schemas.vendedor import VendedorCreate, VendedorRead
 
-router = APIRouter(prefix="/vendedores", tags=["vendedores"])
+router = APIRouter(prefix="/vendedores", tags=["vendedores"], dependencies=[Depends(get_current_user)])
 
 
 @router.post("", response_model=VendedorRead, status_code=201, dependencies=[Depends(exigir_admin)])

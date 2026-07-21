@@ -3,10 +3,10 @@ from sqlalchemy.orm import Session
 
 from app.crud import produto as crud_produto
 from app.database import get_db
-from app.dependencies import exigir_admin
+from app.dependencies import exigir_admin, get_current_user
 from app.schemas.produto import ProdutoCreate, ProdutoRead
 
-router = APIRouter(prefix="/produtos", tags=["produtos"])
+router = APIRouter(prefix="/produtos", tags=["produtos"], dependencies=[Depends(get_current_user)])
 
 
 @router.post("", response_model=ProdutoRead, status_code=201, dependencies=[Depends(exigir_admin)])

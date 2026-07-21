@@ -4,8 +4,7 @@ from sqlalchemy.orm import Session
 from datetime import date, datetime, time, timedelta, timezone
 from decimal import Decimal
 
-# Manaus é UTC−4 o ano inteiro (sem horário de verão). O "dia" do relatório
-# é um dia do calendário de Manaus, não um dia UTC.
+
 FUSO_MANAUS = timezone(timedelta(hours=-4))
 
 from app.models.produto import Produto
@@ -17,7 +16,7 @@ from app.schemas.venda import VendaCreate
 from app.enums import FormaPagamento
 
 
-def criar_venda(db: Session, dados: VendaCreate) -> Venda:
+def criar_venda(db: Session, dados: VendaCreate, registrado_por_id: int) -> Venda:
     if dados.cliente_id is not None:
         cliente = db.get(Cliente, dados.cliente_id)
         if cliente is None:
@@ -31,9 +30,10 @@ def criar_venda(db: Session, dados: VendaCreate) -> Venda:
         paga_em = datetime.now(timezone.utc)
 
     venda = Venda(
-        forma_pagamento = forma_pagamento,
-        cliente_id = dados.cliente_id,
-        paga_em = paga_em,
+        forma_pagamento=forma_pagamento,
+        cliente_id=dados.cliente_id,
+        paga_em=paga_em,
+        registrado_por_id=registrado_por_id,
     )
 
     for item in dados.itens:

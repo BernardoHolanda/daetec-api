@@ -25,3 +25,4 @@ class Venda(Base):
     cliente_id: Mapped[int | None] = mapped_column(ForeignKey("clientes.id"))
     paga_em: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     cancelada_em: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    registrado_por_id: Mapped[int] = mapped_column(ForeignKey("usuarios.id"))

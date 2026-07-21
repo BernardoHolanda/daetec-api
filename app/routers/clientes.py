@@ -6,10 +6,10 @@ from app.crud import venda as crud_venda
 from app.schemas.venda import ContaRead, FecharConta
 from app.crud import cliente as crud_cliente
 from app.database import get_db
-from app.dependencies import exigir_admin
+from app.dependencies import exigir_admin, get_current_user
 from app.schemas.cliente import ClienteCreate, ClienteRead
 
-router = APIRouter(prefix="/clientes", tags=["clientes"])
+router = APIRouter(prefix="/clientes", tags=["clientes"], dependencies=[Depends(get_current_user)])
 
 
 @router.post("", response_model=ClienteRead, status_code=201)

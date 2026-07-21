@@ -3,16 +3,21 @@ from sqlalchemy.orm import Session
 
 from app.crud import venda as crud_venda
 from app.database import get_db
-from app.dependencies import exigir_admin
+from app.dependencies import exigir_admin, get_current_user
 from app.schemas.venda import VendaCreate, VendaRead
+from app.models.usuario import Usuario
 
-router = APIRouter(prefix="/vendas", tags=["vendas"])
+router = APIRouter(prefix="/vendas", tags=["vendas"], dependencies=[Depends(get_current_user)])
 
 
 @router.post("", response_model=VendaRead, status_code=201)
-def criar(dados: VendaCreate, db: Session = Depends(get_db)):
+def criar(
+    dados: VendaCreate,
+    db: Session = Depends(get_db),
+    usuario: Usuario = Depends(get_current_user),
+):
     try:
-        return crud_venda.criar_venda(db, dados)
+        return crud_venda.criar_venda(db, dados, registrado_por_id=usuario.id)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 

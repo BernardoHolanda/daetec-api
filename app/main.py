@@ -1,3 +1,6 @@
+import os
+
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy import text
@@ -7,6 +10,16 @@ from app.database import engine
 from app.routers import produtos, vendedores, vendas, clientes, relatorio, usuarios, auth
 
 app = FastAPI(title="DAETEC API")
+origins = os.getenv("CORS_ORIGINS", "http://localhost:5173").split(",")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 app.include_router(produtos.router)
 app.include_router(vendedores.router)
 app.include_router(vendas.router)

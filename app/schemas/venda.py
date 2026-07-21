@@ -36,6 +36,7 @@ class VendaRead(BaseModel):
     paga_em: datetime | None
     cancelada_em: datetime | None
     itens: list[ItemVendaRead]
+    registrado_por_id: int
 
     model_config = {"from_attributes": True}
 
