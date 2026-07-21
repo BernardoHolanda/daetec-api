@@ -79,8 +79,21 @@ então comandos dispensam o prefixo `docker compose exec api`.
   (`hash_senha`/`verificar_senha`). Schema **assimétrico**: `senha` só entra
   (`UsuarioCreate`), nunca sai (`UsuarioRead` sem hash + `response_model` como 2ª
   barreira). `criar_usuario` faz a **ponte** senha→hash.
-- 🔜 Próximo: **login + JWT** (lição 23), **proteger rotas** (24), **papéis/RBAC**
-  (25). Depois: **testes** (pytest) e frontend (Vue).
+- ✅ **Login + JWT** (lição 23): `POST /login` (form `OAuth2PasswordRequestForm`)
+  confere a senha com `verificar_senha` e emite um **JWT assinado** (`criar_token`
+  em `app/security.py`) com `sub`/`papel`/`exp`. Erro **único** ("usuário ou senha
+  inválidos") pros dois casos — não entrega quais usernames existem.
+- ✅ **Proteção de rotas** (lição 24): dependência `get_current_user` em
+  `app/dependencies.py` — lê `Authorization: Bearer` (`OAuth2PasswordBearer`),
+  valida assinatura + `exp` (`jwt.decode`) e re-busca o usuário no banco. Token
+  inválido/adulterado/vencido → **401**. `GET /usuarios/me` protegido de exemplo.
+- ✅ **RBAC / papéis** (lição 25): dependência `exigir_admin` (encadeia em
+  `get_current_user`) → **403** pra comum em ação de admin. **401 = quem é você**;
+  **403 = sei quem é, mas não pode**. Aplicado por rota (`dependencies=[...]` no
+  decorador) ou por router inteiro (relatório). Regra: **comum vende + lê**; **admin
+  cria/altera/deleta + relatório**. `POST /clientes` (abrir conta) e fechar conta
+  ficam **livres** (fazem parte de vender); `PUT /clientes` é admin (gestão).
+- 🔜 Próximo: **testes** (pytest). Depois: frontend (Vue).
 
 ### Modelo de dados atual
 
@@ -141,6 +154,9 @@ docker compose up -d --build
 | 20 | Conta / fiado | Cadastro de **cliente** (exercício solo). **Opção A de modelagem**: venda "na conta" é só uma `Venda` com `cliente_id` (nullable FK) e `paga_em` (nullable) — sem tabela paralela, reaproveita tudo. Requisito novo (fiado) **afrouxou** `forma_pagamento` pra nullable (software evolui). `criar_venda` com **dois caminhos** (fiado × à vista). `GET /clientes/{id}/conta` = **visão calculada** (não mapeia tabela; soma `quantidade × preço` das vendas em aberto; `Decimal("0")` de base). `POST .../conta/fechar` = **update em lote numa transação** (loop + um `commit` = mesmo `paga_em` em todas). Colunas nullable → migration segura mesmo com dados; autogenerate acertou sozinho (`alter_column` afrouxando NOT NULL + FK). |
 | 21 | Relatório (agregação) | **Agregação no banco** em vez de somar no Python: `func.sum(a*b)`, `func.coalesce(sum, 0)`, `.join(Venda, ...)`, `.group_by(...)` com 1 e **2 colunas**. O trio **`db.scalar`** (1 valor) × **`db.scalars`** (1 coluna) × **`db.execute(...).all()`** (linhas inteiras). Remontar linhas achatadas em dict aninhado com **`setdefault(k, {})[k2] = v`**. **Recebido** (por `paga_em`, fiado sai sozinho pois `NULL >= x` é falso) **separado** da **conta em aberto** (sem data, saldo acumulado). Montagem: **query param opcional** `?dia=` (3º jeito de receber dado, além de path e body) c/ default `date.today()`, de-para `{id: nome}`, **união de chaves** `set(a) \| set(b)`. Anotação de tipo (`-> Decimal`) é avaliada **no import** — nome indefinido derruba o app. |
 | 22 | Auth — senha/hash | `Usuario` **standalone** (sem FK p/ vendedor) + `papel` (Enum admin/comum) = base de **RBAC**. **Hash de senha** com **bcrypt** (`hash_senha`/`verificar_senha` em `app/security.py`): transformação **só de ida**, **salt** embutido no próprio hash (`$2b$12$…`), lento de propósito — igual `password_hash()` do PHP. Schema **assimétrico**: senha entra crua (`UsuarioCreate`), **nunca** sai (`UsuarioRead` sem hash + `response_model` como 2ª barreira). `criar_usuario` é a **ponte** senha→hash. Migration: `create_table` **cria o tipo ENUM sozinho** (≠ `add_column` da lição 19). Dependência nova (`bcrypt`) → **rebuild** do container (via *Dev Containers: Rebuild*). |
+| 23 | Login + JWT | **JWT** = `header.payload.signature`; **assinado, não criptografado** (o payload é base64 legível — nada de segredo lá; o que protege é a **assinatura** com `JWT_SECRET`). **Stateless** (servidor não guarda sessão). `criar_token` (`jwt.encode`, HS256, claims `sub`/`papel`/`exp`; PyJWT converte `datetime`→timestamp e valida `exp` sozinho). `POST /login` usa **`OAuth2PasswordRequestForm`** (form-data, não JSON — é o que faz o *Authorize* do `/docs` funcionar depois). **Erro único** pros dois casos (senha errada × user inexistente) → não enumera usernames. `pyjwt` novo → rebuild. |
+| 24 | Proteger rotas | Dependência **`get_current_user`** (`app/dependencies.py`): **`OAuth2PasswordBearer`** lê o header `Authorization: Bearer`; `jwt.decode` valida assinatura **e** `exp`; re-busca o usuário no banco (token válido mas user apagado → barra). Erro → **401** (+ `WWW-Authenticate: Bearer`). Usa-se com `Depends(get_current_user)`. **Ordem de rota**: `/me` **antes** de `/{id}` (senão `"me"` cai no parse de int → 422). Reforço do nugget da lição 21: **default de parâmetro é avaliado na definição** — `Depends(get_current_user)` exige a função **acima**. |
+| 25 | RBAC / papéis | **Autenticação × autorização**: **401** = "não sei quem é você"; **403** = "sei, mas você não pode". `exigir_admin` **encadeia** em `get_current_user` e checa `papel` → 403. Aplicação **por rota** (`dependencies=[Depends(exigir_admin)]` no decorador, quando não precisa do usuário) ou **por router inteiro** (relatório). Mapa: comum **vende + lê**; admin **escreve cadastros + relatório + cancela venda**. Refino de domínio: **abrir cliente** e **fechar conta** = livres (é vender); **alterar** cadastro = admin. Critério p/ decidir: *"isso trava uma venda?"*. |
 
 ## Lições de depuração (pra levar pra vida)
 
@@ -169,3 +185,12 @@ docker compose up -d --build
 - **Add coluna NOT NULL em tabela com dados** falha (não sabe o que pôr nas linhas
   antigas). Em produção: nullable → backfill → NOT NULL. Em dev: limpar os dados
   (filhos antes dos pais, por causa da FK) e migrar com a tabela vazia.
+- **Ordem das rotas importa** — o FastAPI casa de cima pra baixo. Rota **específica**
+  (`/usuarios/me`) tem que vir **antes** da rota com parâmetro (`/usuarios/{id}`),
+  senão `"me"` é tratado como id e falha o parse (`int_parsing` → 422).
+- **Default de parâmetro roda na definição** (não na chamada) — reprise do nugget do
+  `-> Decimal`. `def exigir_admin(u = Depends(get_current_user))` exige
+  `get_current_user` **definida acima**, senão `NameError` no import.
+- **Segredo assina, não esconde** — o payload de um JWT é base64 **legível por
+  qualquer um**. Nunca ponha dado sensível nele; o que impede forjar é a assinatura
+  com `JWT_SECRET` (mudou 1 byte do token → 401).

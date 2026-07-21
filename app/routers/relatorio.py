@@ -9,8 +9,9 @@ from app.crud import vendedor as crud_vendedor
 from app.crud import cliente as crud_cliente
 from app.database import get_db
 from app.schemas.relatorio import RelatorioRead, VendedorRelatorioRead, DevedorRead
+from app.dependencies import exigir_admin
 
-router = APIRouter(prefix="/relatorio", tags=["relatorio"])
+router = APIRouter(prefix="/relatorio", tags=["relatorio"], dependencies=[Depends(exigir_admin)])
 
 
 @router.get("", response_model=RelatorioRead)

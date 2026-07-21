@@ -20,3 +20,7 @@ def listar_usuarios(db: Session) -> list[Usuario]:
 
 def obter_usuario(db: Session, usuario_id: int) -> Usuario | None:
     return db.get(Usuario, usuario_id)
+
+
+def buscar_por_username(db: Session, username: str) -> Usuario | None:
+    return db.scalar(select(Usuario).where(Usuario.username == username))

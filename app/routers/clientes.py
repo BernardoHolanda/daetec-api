@@ -6,6 +6,7 @@ from app.crud import venda as crud_venda
 from app.schemas.venda import ContaRead, FecharConta
 from app.crud import cliente as crud_cliente
 from app.database import get_db
+from app.dependencies import exigir_admin
 from app.schemas.cliente import ClienteCreate, ClienteRead
 
 router = APIRouter(prefix="/clientes", tags=["clientes"])
@@ -29,7 +30,7 @@ def obter(cliente_id: int, db: Session = Depends(get_db)):
     return cliente
 
 
-@router.put("/{cliente_id}", response_model=ClienteRead)
+@router.put("/{cliente_id}", response_model=ClienteRead, dependencies=[Depends(exigir_admin)])
 def atualizar(cliente_id: int, dados: ClienteCreate, db: Session = Depends(get_db)):
     cliente = crud_cliente.obter_cliente(db, cliente_id)
     if cliente is None:

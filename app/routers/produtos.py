@@ -3,12 +3,13 @@ from sqlalchemy.orm import Session
 
 from app.crud import produto as crud_produto
 from app.database import get_db
+from app.dependencies import exigir_admin
 from app.schemas.produto import ProdutoCreate, ProdutoRead
 
 router = APIRouter(prefix="/produtos", tags=["produtos"])
 
 
-@router.post("", response_model=ProdutoRead, status_code=201)
+@router.post("", response_model=ProdutoRead, status_code=201, dependencies=[Depends(exigir_admin)])
 def criar(dados: ProdutoCreate, db: Session = Depends(get_db)):
     return crud_produto.criar_produto(db, dados)
 
@@ -26,7 +27,7 @@ def obter(produto_id: int, db: Session = Depends(get_db)):
     return produto
 
 
-@router.put("/{produto_id}", response_model=ProdutoRead)
+@router.put("/{produto_id}", response_model=ProdutoRead, dependencies=[Depends(exigir_admin)])
 def atualizar(produto_id: int, dados: ProdutoCreate, db: Session = Depends(get_db)):
     produto = crud_produto.obter_produto(db, produto_id)
     if produto is None:
@@ -34,7 +35,7 @@ def atualizar(produto_id: int, dados: ProdutoCreate, db: Session = Depends(get_d
     return crud_produto.atualizar_produto(db, produto, dados)
 
 
-@router.delete("/{produto_id}", status_code=204)
+@router.delete("/{produto_id}", status_code=204, dependencies=[Depends(exigir_admin)])
 def deletar(produto_id: int, db: Session = Depends(get_db)):
     produto = crud_produto.obter_produto(db, produto_id)
     if produto is None:
