@@ -32,6 +32,9 @@ docker compose logs -f api
 
 # parar
 docker compose down
+
+# semear o admin inicial (idempotente; lê ADMIN_* do .env)
+docker compose exec api python seed.py
 ```
 
 - API: http://localhost:8000
@@ -111,8 +114,12 @@ então comandos dispensam o prefixo `docker compose exec api`.
   `quantidade` com `Field(gt=0)`. **UNIQUE** em `produto`/`vendedor`/`cliente.nome`
   (migration **à mão** — autogenerate não detecta UNIQUE) + **handler global** de
   `IntegrityError` → **409** (nenhuma violação vaza como 500).
-- 🔜 Próximo: **seed** (admin inicial idempotente). Depois: **testes** (pytest) e
-  frontend (Vue).
+- ✅ **Seed** (`seed.py`): cria o **admin inicial** de forma **idempotente** (resolve
+  o ovo-e-galinha — o 1º admin não pode ser criado pela API, que exige admin logado).
+  Lê `ADMIN_USERNAME`/`ADMIN_PASSWORD` do `.env` (aborta se a senha faltar). Rodar:
+  `docker compose exec api python seed.py`. (As vars do `.env` só entram no container
+  após ele ser **recriado** — `env_file` carrega no start.)
+- 🔜 Próximo: **testes** (pytest). Depois: frontend (Vue).
 
 ### Modelo de dados atual
 
