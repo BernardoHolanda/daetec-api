@@ -3,6 +3,7 @@
   "dockerComposeFile": "../docker-compose.yml",
   "service": "api",
   "workspaceFolder": "/code",
+  "postCreateCommand": "pip install --user -r requirements-dev.txt",
   "customizations": {
     "vscode": {
       "extensions": [

@@ -2,5 +2,8 @@
 __pycache__/
 *.pyc
 
+# Cache do pytest
+.pytest_cache/
+
 # Variáveis de ambiente / segredos
 .env

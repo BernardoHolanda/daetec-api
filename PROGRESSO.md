@@ -132,7 +132,15 @@ então comandos dispensam o prefixo `docker compose exec api`.
 - ✅ **Tudo atrás de login**: as leituras e abrir/fechar conta passaram a exigir
   autenticação (`dependencies=[Depends(get_current_user)]` no nível do **router** de
   produtos/vendedores/clientes/vendas). Só `/login` e `/health` ficam públicos.
-- 🔜 **Só falta os testes (pytest)** — deixado pra outra sessão. Depois: frontend (Vue).
+- ✅ **Testes automatizados (pytest)** (lição 31): **22 testes** cobrindo auth,
+  RBAC (403), CRUD+validações de produto (422/409/404), o fluxo de venda inteiro
+  (à vista, fiado, `registrado_por`, 400×422), o relatório (agregação no fuso de
+  Manaus) e o ciclo do fiado ponta a ponta. Rodam contra um **Postgres de teste**
+  (`daetec_test`), cada teste numa **transação com rollback** (isolamento total,
+  banco sempre limpo). `TestClient` com `get_db` sobrescrito via
+  `dependency_overrides`. Deps de dev em `requirements-dev.txt` (reinstaladas no
+  rebuild pelo `postCreateCommand`). Rodar: `python -m pytest`.
+- 🎉 **BACKEND TERMINADO.** Próximo grande passo: **frontend (Vue)**, repo separado.
 
 ### Modelo de dados atual
 
@@ -171,6 +179,7 @@ docker compose up -d --build
 
 | # | Tema | O que ficou de aprendizado |
 |---|------|----------------------------|
+| 31 | Testes (pytest) | **Banco de teste real** (`daetec_test`) em vez de SQLite — nossa robustez é **específica do Postgres** (ENUM, `timestamptz`, `IntegrityError` de UNIQUE); SQLite daria "verde mentiroso". `conftest.py` = fixtures compartilhadas (auto-descoberto). **`CREATE DATABASE` exige `AUTOCOMMIT`** (não roda em transação). **Isolamento por teste** = cada teste numa transação com `ROLLBACK` no fim (igual `DAMADoctrineTestBundle` do Symfony); truque: `join_transaction_mode="create_savepoint"` faz o `commit()` da app virar **SAVEPOINT**, então o rollback externo desfaz tudo. `TestClient` + `app.dependency_overrides[get_db]` aponta a API pro banco de teste. Fixtures encadeadas (`client_admin` → `usuario_admin`) = **injeção de dependência**, igual `Depends`. Pegadinha: `import app.models` **re-liga o nome `app`** (colide com a instância FastAPI) → usar `from app import models`. Deps de dev separadas (`requirements-dev.txt` + `postCreateCommand`); `--user` + `python -m pytest` (script fora do PATH). `filterwarnings` no `pytest.ini` silencia **cirurgicamente** só o warning externo do Starlette. |
 | 1 | Git — início | `git init`, branch `main`, identidade **por repositório** (e-mail pessoal local x trabalho global). |
 | 2 | Primeiro commit | As 3 áreas (working / staging / repository), ciclo `add → commit`, `.gitignore`. |
 | 3 | API mínima | FastAPI "olá mundo", `requirements.txt`, decisão Docker-first (sem venv). |

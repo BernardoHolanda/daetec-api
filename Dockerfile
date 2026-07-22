@@ -7,7 +7,9 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 # Usuário não-root com home próprio (necessário para o Dev Container)
-RUN useradd --create-home --uid 1000 appuser
+# --shell /bin/bash: sem isso o padrão é /bin/sh (dash), um shell pobre
+# sem histórico com setas nem autocomplete — o "terminal estranho".
+RUN useradd --create-home --shell /bin/bash --uid 1000 appuser
 
 # Pasta de trabalho dentro do container
 WORKDIR /code
