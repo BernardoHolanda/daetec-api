@@ -10,7 +10,7 @@ from app.models.usuario import Usuario
 router = APIRouter(prefix="/usuarios", tags=["usuarios"])
 
 
-@router.post("", response_model=UsuarioRead, dependencies=[Depends(exigir_admin)])
+@router.post("", response_model=UsuarioRead, status_code=201, dependencies=[Depends(exigir_admin)])
 def criar_usuario(dados: UsuarioCreate, db: Session = Depends(get_db)):
     try:
         return crud_usuario.criar_usuario(db, dados)

@@ -17,7 +17,7 @@ router = APIRouter(prefix="/relatorio", tags=["relatorio"], dependencies=[Depend
 @router.get("", response_model=RelatorioRead)
 def relatorio(dia: date | None = None, db: Session = Depends(get_db)):
     if dia is None:
-        dia = date.today()
+        dia = crud_venda.hoje_manaus()
 
     recebido = crud_venda.recebido_por_vendedor(db, dia)
     contas = crud_venda.contas_abertas_por_vendedor(db)
