@@ -102,47 +102,6 @@ def fechar_conta(db: Session, cliente_id: int, forma_pagamento: FormaPagamento) 
     return vendas
 
 
-def recebido_do_dia(db: Session, dia: date) -> Decimal:
-    inicio = datetime.combine(dia, time.min, tzinfo=FUSO_MANAUS)
-    fim = datetime.combine(dia, time.max, tzinfo=FUSO_MANAUS)
-
-    return db.scalar(
-        select(
-            func.coalesce(
-                func.sum(ItemVenda.quantidade * ItemVenda.preco_unitario),
-                0,
-            )
-        )
-        .join(Venda, ItemVenda.venda_id == Venda.id)
-        .where(
-            Venda.paga_em >= inicio,
-            Venda.paga_em <= fim,
-            Venda.cancelada_em.is_(None),
-        )
-    )
-
-
-def recebido_por_forma(db: Session, dia: date) -> dict[FormaPagamento, Decimal]:
-    inicio = datetime.combine(dia, time.min, tzinfo=FUSO_MANAUS)
-    fim = datetime.combine(dia, time.max, tzinfo=FUSO_MANAUS)
-
-    linhas = db.execute(
-        select(
-            Venda.forma_pagamento,
-            func.sum(ItemVenda.quantidade * ItemVenda.preco_unitario),
-        )
-        .join(Venda, ItemVenda.venda_id == Venda.id)
-        .where(
-            Venda.paga_em >= inicio,
-            Venda.paga_em <= fim,
-            Venda.cancelada_em.is_(None),
-        )
-        .group_by(Venda.forma_pagamento)
-    ).all()
-
-    return {forma: total for forma, total in linhas}
-
-
 def recebido_por_vendedor(db: Session, dia: date) -> dict[int, dict[FormaPagamento, Decimal]]:
     inicio = datetime.combine(dia, time.min, tzinfo=FUSO_MANAUS)
     fim = datetime.combine(dia, time.max, tzinfo=FUSO_MANAUS)
@@ -188,3 +147,16 @@ def contas_abertas_por_vendedor(db: Session) -> dict[int, dict[int, Decimal]]:
     for vendedor_id, cliente_id, total in linhas:
         resultado.setdefault(vendedor_id, {})[cliente_id] = total
     return resultado
+
+
+def hoje_manaus() -> date:
+    """O 'hoje' no fuso de Manaus (não o do servidor, que é UTC)."""
+    return datetime.now(FUSO_MANAUS).date()
+
+
+def total_das_vendas(vendas: list[Venda]) -> Decimal:
+    """Soma quantidade × preço de todos os itens de uma lista de vendas."""
+    return sum(
+        (item.quantidade * item.preco_unitario for venda in vendas for item in venda.itens),
+        Decimal("0"),
+    )

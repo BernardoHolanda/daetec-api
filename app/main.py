@@ -43,7 +43,11 @@ def health_db():
 
 @app.exception_handler(IntegrityError)
 def integrity_error_handler(request: Request, exc: IntegrityError):
-    return JSONResponse(
-        status_code=409,
-        content={"detail": "Já existe um registro com esses dados."},
-    )
+    sqlstate = getattr(getattr(exc, "orig", None), "sqlstate", None)
+    if sqlstate == "23503": # foreign_key_violation
+        detail = "Registro em uso por outro recurso — não é possível concluir."
+    elif sqlstate == "23505": # unique_violation
+        detail = "Já existe um registro com esses dados."
+    else:
+        detail = "Violação de integridade dos dados."
+    return JSONResponse(status_code=409, content={"detail": detail})

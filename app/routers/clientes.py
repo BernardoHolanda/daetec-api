@@ -1,6 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from decimal import Decimal
 
 from app.crud import venda as crud_venda
 from app.schemas.venda import ContaRead, FecharConta
@@ -45,10 +44,7 @@ def conta(cliente_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Cliente não encontrado")
 
     vendas = crud_venda.listar_conta(db, cliente_id)
-    total = sum(
-        (item.quantidade * item.preco_unitario for venda in vendas for item in venda.itens),
-        Decimal("0"),
-    )
+    total = crud_venda.total_das_vendas(vendas)
     return ContaRead(cliente_id=cliente_id, total=total, vendas=vendas)
 
 
@@ -63,8 +59,5 @@ def fechar(cliente_id: int, dados: FecharConta, db: Session = Depends(get_db)):
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-    total = sum(
-        (item.quantidade * item.preco_unitario for venda in vendas for item in venda.itens),
-        Decimal("0"),
-    )
+    total = crud_venda.total_das_vendas(vendas)
     return ContaRead(cliente_id=cliente_id, total=total, vendas=vendas)
