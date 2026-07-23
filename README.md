@@ -59,16 +59,23 @@ Documentação interativa (Swagger) em **http://localhost:8000/docs**.
 > O `.env` real fica **fora do git** (`.gitignore`). Use o `.env.dev` como modelo — ele
 > contém apenas *placeholders*, nenhum segredo real.
 
-## Testes
+## Testes e qualidade de código
 
 Suíte em **pytest**, rodando contra um banco Postgres de teste (`daetec_test`) com
-isolamento por transação (rollback a cada teste).
+isolamento por transação (rollback a cada teste). Lint e formatação usam **Ruff**
+(config em `ruff.toml`).
 
 ```bash
 # dentro do container
 pip install --user -r requirements-dev.txt
-python -m pytest -v
+
+python -m pytest -v          # testes
+python -m ruff check         # lint (imports não usados, ordem, etc.)
+python -m ruff format        # formatação automática
 ```
+
+No VS Code, com a extensão do Ruff instalada (já listada no `devcontainer.json`), a
+formatação roda ao salvar.
 
 ## Estrutura
 
