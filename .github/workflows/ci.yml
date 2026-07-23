@@ -1,0 +1,51 @@
+name: CI
+
+# Quando rodar: a cada push em qualquer branch.
+on: push
+
+jobs:
+  testes:
+    runs-on: ubuntu-latest
+
+    # Um Postgres "de mentira" que o GitHub sobe só pra este job.
+    # Mesma versão e credenciais do docker-compose, pra bater com o .env.
+    services:
+      db:
+        image: postgres:17
+        env:
+          POSTGRES_USER: daetec
+          POSTGRES_PASSWORD: daetec_dev
+          POSTGRES_DB: daetec
+        ports:
+          - 5432:5432
+        # Espera o banco ficar "pronto pra aceitar conexão" antes de seguir.
+        options: >-
+          --health-cmd "pg_isready -U daetec"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    # Variáveis de ambiente do job. O host é "localhost" (não "db"), porque
+    # no runner o Postgres está exposto na porta local 5432.
+    env:
+      DATABASE_URL: postgresql+psycopg://daetec:daetec_dev@localhost:5432/daetec
+      JWT_SECRET: segredo-qualquer-so-pro-ci
+
+    steps:
+      # 1. Baixa o código deste commit pra dentro do runner.
+      - uses: actions/checkout@v4
+
+      # 2. Instala o Python 3.13 (mesma versão do Dockerfile).
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      # 3. Instala as dependências da app e as de teste.
+      - name: Instalar dependências
+        run: |
+          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
+
+      # 4. Roda a suíte. Se algum teste falhar, o job fica vermelho.
+      - name: Rodar os testes
+        run: python -m pytest -v
