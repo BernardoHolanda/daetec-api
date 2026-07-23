@@ -1,14 +1,16 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from app.crud import venda as crud_venda
-from app.schemas.venda import ContaRead, FecharConta
 from app.crud import cliente as crud_cliente
+from app.crud import venda as crud_venda
 from app.database import get_db
 from app.dependencies import exigir_admin, get_current_user
 from app.schemas.cliente import ClienteCreate, ClienteRead
+from app.schemas.venda import ContaRead, FecharConta
 
-router = APIRouter(prefix="/clientes", tags=["clientes"], dependencies=[Depends(get_current_user)])
+router = APIRouter(
+    prefix="/clientes", tags=["clientes"], dependencies=[Depends(get_current_user)]
+)
 
 
 @router.post("", response_model=ClienteRead, status_code=201)
@@ -29,7 +31,9 @@ def obter(cliente_id: int, db: Session = Depends(get_db)):
     return cliente
 
 
-@router.put("/{cliente_id}", response_model=ClienteRead, dependencies=[Depends(exigir_admin)])
+@router.put(
+    "/{cliente_id}", response_model=ClienteRead, dependencies=[Depends(exigir_admin)]
+)
 def atualizar(cliente_id: int, dados: ClienteCreate, db: Session = Depends(get_db)):
     cliente = crud_cliente.obter_cliente(db, cliente_id)
     if cliente is None:

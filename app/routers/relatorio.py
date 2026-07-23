@@ -4,14 +4,16 @@ from decimal import Decimal
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
+from app.crud import cliente as crud_cliente
 from app.crud import venda as crud_venda
 from app.crud import vendedor as crud_vendedor
-from app.crud import cliente as crud_cliente
 from app.database import get_db
-from app.schemas.relatorio import RelatorioRead, VendedorRelatorioRead, DevedorRead
 from app.dependencies import exigir_admin
+from app.schemas.relatorio import DevedorRead, RelatorioRead, VendedorRelatorioRead
 
-router = APIRouter(prefix="/relatorio", tags=["relatorio"], dependencies=[Depends(exigir_admin)])
+router = APIRouter(
+    prefix="/relatorio", tags=["relatorio"], dependencies=[Depends(exigir_admin)]
+)
 
 
 @router.get("", response_model=RelatorioRead)

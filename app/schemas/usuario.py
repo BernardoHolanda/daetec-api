@@ -1,7 +1,7 @@
 from pydantic import BaseModel, EmailStr
 
-from app.schemas.common import SenhaForte
 from app.enums import PapelUsuario
+from app.schemas.common import SenhaForte
 
 
 class UsuarioBase(BaseModel):

@@ -6,10 +6,17 @@ from app.database import get_db
 from app.dependencies import exigir_admin, get_current_user
 from app.schemas.produto import ProdutoCreate, ProdutoRead
 
-router = APIRouter(prefix="/produtos", tags=["produtos"], dependencies=[Depends(get_current_user)])
+router = APIRouter(
+    prefix="/produtos", tags=["produtos"], dependencies=[Depends(get_current_user)]
+)
 
 
-@router.post("", response_model=ProdutoRead, status_code=201, dependencies=[Depends(exigir_admin)])
+@router.post(
+    "",
+    response_model=ProdutoRead,
+    status_code=201,
+    dependencies=[Depends(exigir_admin)],
+)
 def criar(dados: ProdutoCreate, db: Session = Depends(get_db)):
     return crud_produto.criar_produto(db, dados)
 
@@ -27,7 +34,9 @@ def obter(produto_id: int, db: Session = Depends(get_db)):
     return produto
 
 
-@router.put("/{produto_id}", response_model=ProdutoRead, dependencies=[Depends(exigir_admin)])
+@router.put(
+    "/{produto_id}", response_model=ProdutoRead, dependencies=[Depends(exigir_admin)]
+)
 def atualizar(produto_id: int, dados: ProdutoCreate, db: Session = Depends(get_db)):
     produto = crud_produto.obter_produto(db, produto_id)
     if produto is None:

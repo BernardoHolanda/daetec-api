@@ -5,14 +5,16 @@ from sqlalchemy.orm import Session
 
 from app.crud import usuario as crud_usuario
 from app.database import get_db
+from app.enums import PapelUsuario
 from app.models.usuario import Usuario
 from app.security import JWT_ALGORITHM, JWT_SECRET
-from app.enums import PapelUsuario
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
 
-def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)) -> Usuario:
+def get_current_user(
+    token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)
+) -> Usuario:
     credenciais_invalidas = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Credenciais inválidas",

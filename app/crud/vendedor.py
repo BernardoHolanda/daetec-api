@@ -21,7 +21,9 @@ def obter_vendedor(db: Session, vendedor_id: int) -> Vendedor | None:
     return db.get(Vendedor, vendedor_id)
 
 
-def atualizar_vendedor(db: Session, vendedor: Vendedor, dados: VendedorCreate) -> Vendedor:
+def atualizar_vendedor(
+    db: Session, vendedor: Vendedor, dados: VendedorCreate
+) -> Vendedor:
     vendedor.nome = dados.nome
     db.commit()
     db.refresh(vendedor)

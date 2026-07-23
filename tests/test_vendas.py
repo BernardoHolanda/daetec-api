@@ -35,9 +35,7 @@ def test_venda_produto_inexistente_400(client_comum, vendedor):
         "/vendas",
         json={
             "forma_pagamento": "pix",
-            "itens": [
-                {"produto_id": 999, "vendedor_id": vendedor.id, "quantidade": 1}
-            ],
+            "itens": [{"produto_id": 999, "vendedor_id": vendedor.id, "quantidade": 1}],
         },
     )
     assert resp.status_code == 400

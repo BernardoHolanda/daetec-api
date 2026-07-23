@@ -1,19 +1,18 @@
 import os
+from decimal import Decimal
 
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import Session
 
-from decimal import Decimal
-
 from app import models  # noqa: F401 — registra todos os models no Base.metadata
 from app.database import Base, get_db
-from app.main import app
 from app.enums import PapelUsuario
-from app.models.usuario import Usuario
+from app.main import app
 from app.models.cliente import Cliente
 from app.models.produto import Produto
+from app.models.usuario import Usuario
 from app.models.vendedor import Vendedor
 from app.security import hash_senha
 
@@ -58,6 +57,7 @@ def db_session(engine):
 @pytest.fixture
 def client(db_session):
     """TestClient com o get_db trocado pelal)."""
+
     def get_db_de_teste():
         yield db_session
 
@@ -94,9 +94,7 @@ def usuario_comum(db_session):
 
 
 def _login(client, username):
-    resp = client.post(
-        "/login", data={"username": username, "password": "Senhaforte1"}
-    )
+    resp = client.post("/login", data={"username": username, "password": "Senhaforte1"})
     token = resp.json()["access_token"]
     client.headers["Authorization"] = f"Bearer {token}"
     return client

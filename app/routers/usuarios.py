@@ -3,14 +3,19 @@ from sqlalchemy.orm import Session
 
 from app.crud import usuario as crud_usuario
 from app.database import get_db
-from app.schemas.usuario import UsuarioCreate, UsuarioRead
-from app.dependencies import get_current_user, exigir_admin
+from app.dependencies import exigir_admin, get_current_user
 from app.models.usuario import Usuario
+from app.schemas.usuario import UsuarioCreate, UsuarioRead
 
 router = APIRouter(prefix="/usuarios", tags=["usuarios"])
 
 
-@router.post("", response_model=UsuarioRead, status_code=201, dependencies=[Depends(exigir_admin)])
+@router.post(
+    "",
+    response_model=UsuarioRead,
+    status_code=201,
+    dependencies=[Depends(exigir_admin)],
+)
 def criar_usuario(dados: UsuarioCreate, db: Session = Depends(get_db)):
     try:
         return crud_usuario.criar_usuario(db, dados)
@@ -28,7 +33,9 @@ def usuario_atual(usuario: Usuario = Depends(get_current_user)):
     return usuario
 
 
-@router.get("/{usuario_id}", response_model=UsuarioRead, dependencies=[Depends(exigir_admin)])
+@router.get(
+    "/{usuario_id}", response_model=UsuarioRead, dependencies=[Depends(exigir_admin)]
+)
 def obter_usuario(usuario_id: int, db: Session = Depends(get_db)):
     usuario = crud_usuario.obter_usuario(db, usuario_id)
     if usuario is None:

@@ -7,6 +7,7 @@ Rodar:  docker compose exec api python seed.py
 
 É idempotente — rodar várias vezes não duplica nada.
 """
+
 import os
 
 from sqlalchemy import select

@@ -7,7 +7,11 @@ def _venda_fiado(client, cliente_id, produto_id, vendedor_id, qtd):
         json={
             "cliente_id": cliente_id,
             "itens": [
-                {"produto_id": produto_id, "vendedor_id": vendedor_id, "quantidade": qtd}
+                {
+                    "produto_id": produto_id,
+                    "vendedor_id": vendedor_id,
+                    "quantidade": qtd,
+                }
             ],
         },
     )

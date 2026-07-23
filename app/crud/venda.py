@@ -1,19 +1,18 @@
-from sqlalchemy import func, select
-from sqlalchemy.orm import Session
-
 from datetime import date, datetime, time, timedelta, timezone
 from decimal import Decimal
 
+from sqlalchemy import func, select
+from sqlalchemy.orm import Session
 
-FUSO_MANAUS = timezone(timedelta(hours=-4))
-
+from app.enums import FormaPagamento
+from app.models.cliente import Cliente
+from app.models.item_venda import ItemVenda
 from app.models.produto import Produto
 from app.models.venda import Venda
-from app.models.item_venda import ItemVenda
-from app.models.cliente import Cliente
 from app.models.vendedor import Vendedor
 from app.schemas.venda import VendaCreate
-from app.enums import FormaPagamento
+
+FUSO_MANAUS = timezone(timedelta(hours=-4))
 
 
 def criar_venda(db: Session, dados: VendaCreate, registrado_por_id: int) -> Venda:
@@ -46,10 +45,10 @@ def criar_venda(db: Session, dados: VendaCreate, registrado_por_id: int) -> Vend
 
         venda.itens.append(
             ItemVenda(
-                produto_id = item.produto_id,
-                vendedor_id = item.vendedor_id,
-                quantidade = item.quantidade,
-                preco_unitario = produto.preco,
+                produto_id=item.produto_id,
+                vendedor_id=item.vendedor_id,
+                quantidade=item.quantidade,
+                preco_unitario=produto.preco,
             )
         )
 
@@ -86,7 +85,9 @@ def listar_conta(db: Session, cliente_id: int) -> list[Venda]:
     )
 
 
-def fechar_conta(db: Session, cliente_id: int, forma_pagamento: FormaPagamento) -> list[Venda]:
+def fechar_conta(
+    db: Session, cliente_id: int, forma_pagamento: FormaPagamento
+) -> list[Venda]:
     vendas = listar_conta(db, cliente_id)
     if not vendas:
         raise ValueError("Cliente não tem conta em aberto")
@@ -102,7 +103,9 @@ def fechar_conta(db: Session, cliente_id: int, forma_pagamento: FormaPagamento) 
     return vendas
 
 
-def recebido_por_vendedor(db: Session, dia: date) -> dict[int, dict[FormaPagamento, Decimal]]:
+def recebido_por_vendedor(
+    db: Session, dia: date
+) -> dict[int, dict[FormaPagamento, Decimal]]:
     inicio = datetime.combine(dia, time.min, tzinfo=FUSO_MANAUS)
     fim = datetime.combine(dia, time.max, tzinfo=FUSO_MANAUS)
 
@@ -157,6 +160,10 @@ def hoje_manaus() -> date:
 def total_das_vendas(vendas: list[Venda]) -> Decimal:
     """Soma quantidade × preço de todos os itens de uma lista de vendas."""
     return sum(
-        (item.quantidade * item.preco_unitario for venda in vendas for item in venda.itens),
+        (
+            item.quantidade * item.preco_unitario
+            for venda in vendas
+            for item in venda.itens
+        ),
         Decimal("0"),
     )

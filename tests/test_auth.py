@@ -5,10 +5,9 @@ def test_login_com_credenciais_validas(client, usuario_admin):
     assert resp.status_code == 200
     assert "access_token" in resp.json()
 
+
 def test_login_senha_errada(client, usuario_admin):
-    resp = client.post(
-        "/login", data={"username": "admin_teste", "password": "errada"}
-    )
+    resp = client.post("/login", data={"username": "admin_teste", "password": "errada"})
     assert resp.status_code == 401
 
 

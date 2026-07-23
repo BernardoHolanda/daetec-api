@@ -4,10 +4,12 @@ from sqlalchemy.orm import Session
 from app.crud import venda as crud_venda
 from app.database import get_db
 from app.dependencies import exigir_admin, get_current_user
-from app.schemas.venda import VendaCreate, VendaRead
 from app.models.usuario import Usuario
+from app.schemas.venda import VendaCreate, VendaRead
 
-router = APIRouter(prefix="/vendas", tags=["vendas"], dependencies=[Depends(get_current_user)])
+router = APIRouter(
+    prefix="/vendas", tags=["vendas"], dependencies=[Depends(get_current_user)]
+)
 
 
 @router.post("", response_model=VendaRead, status_code=201)
@@ -35,7 +37,9 @@ def obter(venda_id: int, db: Session = Depends(get_db)):
     return venda
 
 
-@router.delete("/{venda_id}", response_model=VendaRead, dependencies=[Depends(exigir_admin)])
+@router.delete(
+    "/{venda_id}", response_model=VendaRead, dependencies=[Depends(exigir_admin)]
+)
 def cancelar(venda_id: int, db: Session = Depends(get_db)):
     venda = crud_venda.obter_venda(db, venda_id)
     if venda is None:
