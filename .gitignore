@@ -5,5 +5,8 @@ __pycache__/
 # Cache do pytest
 .pytest_cache/
 
+# Cache do Ruff
+.ruff_cache/
+
 # Variáveis de ambiente / segredos
 .env
