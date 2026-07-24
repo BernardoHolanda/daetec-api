@@ -56,8 +56,7 @@ Documentação interativa (Swagger) em **http://localhost:8000/docs**.
 | `ADMIN_USERNAME` / `ADMIN_PASSWORD` / `ADMIN_EMAIL` | Admin criado pelo `seed.py` |
 | `CORS_ORIGINS` | Origens liberadas no CORS (ex.: `http://localhost:5173`) |
 
-> O `.env` real fica **fora do git** (`.gitignore`). Use o `.env.dev` como modelo — ele
-> contém apenas *placeholders*, nenhum segredo real.
+> O `.env` real fica **fora do git** (`.gitignore`). Use o `.env.dev` como modelo
 
 ## Testes e qualidade de código
 
