@@ -29,7 +29,9 @@ jobs:
     # no runner o Postgres está exposto na porta local 5432.
     env:
       DATABASE_URL: postgresql+psycopg://daetec:daetec_dev@localhost:5432/daetec
-      JWT_SECRET: segredo-qualquer-so-pro-ci
+      # descartável (só assina tokens de teste), mas com 32+ bytes pro PyJWT
+      # não encher o log de InsecureKeyLengthWarning
+      JWT_SECRET: segredo-descartavel-so-pro-ci-nao-usar-em-lugar-nenhum
 
     steps:
       # 1. Baixa o código deste commit pra dentro do runner.
