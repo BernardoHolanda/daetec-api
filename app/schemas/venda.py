@@ -8,7 +8,6 @@ from app.enums import FormaPagamento
 
 class ItemVendaCreate(BaseModel):
     produto_id: int
-    vendedor_id: int
     quantidade: int = Field(gt=0)
 
 

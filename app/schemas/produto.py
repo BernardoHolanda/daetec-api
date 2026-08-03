@@ -3,6 +3,7 @@ from decimal import Decimal
 from pydantic import BaseModel, Field
 
 from app.schemas.common import NomeNormalizado
+from app.schemas.vendedor import VendedorRead
 
 
 class ProdutoBase(BaseModel):
@@ -11,10 +12,11 @@ class ProdutoBase(BaseModel):
 
 
 class ProdutoCreate(ProdutoBase):
-    pass
+    vendedor_id: int
 
 
 class ProdutoRead(ProdutoBase):
     id: int
+    vendedor: VendedorRead
 
     model_config = {"from_attributes": True}

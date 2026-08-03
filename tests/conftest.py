@@ -35,6 +35,10 @@ def engine():
     admin.dispose()
 
     eng = create_engine(TEST_DATABASE_URL)
+    # drop antes de create: o banco de teste sobrevive entre execuções e
+    # create_all NÃO altera tabela existente. Sem isso, model com coluna nova
+    # roda contra schema velho e quebra com "column does not exist".
+    Base.metadata.drop_all(eng)
     Base.metadata.create_all(eng)
     yield eng
     eng.dispose()
@@ -111,19 +115,20 @@ def client_comum(client, usuario_comum):
 
 
 @pytest.fixture
-def produto(db_session):
-    p = Produto(nome="BATATA", preco=Decimal("5.00"))
-    db_session.add(p)
-    db_session.commit()
-    return p
-
-
-@pytest.fixture
 def vendedor(db_session):
     v = Vendedor(nome="JOAO")
     db_session.add(v)
     db_session.commit()
     return v
+
+
+@pytest.fixture
+def produto(db_session, vendedor):
+    """Todo produto tem dono — por isso depende do vendedor."""
+    p = Produto(nome="BATATA", preco=Decimal("5.00"), vendedor_id=vendedor.id)
+    db_session.add(p)
+    db_session.commit()
+    return p
 
 
 @pytest.fixture

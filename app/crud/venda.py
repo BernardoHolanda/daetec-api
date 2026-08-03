@@ -9,7 +9,6 @@ from app.models.cliente import Cliente
 from app.models.item_venda import ItemVenda
 from app.models.produto import Produto
 from app.models.venda import Venda
-from app.models.vendedor import Vendedor
 from app.schemas.venda import VendaCreate
 
 FUSO_MANAUS = timezone(timedelta(hours=-4))
@@ -37,16 +36,15 @@ def criar_venda(db: Session, dados: VendaCreate, registrado_por_id: int) -> Vend
 
     for item in dados.itens:
         produto = db.get(Produto, item.produto_id)
-        vendedor = db.get(Vendedor, item.vendedor_id)
-        if vendedor is None:
-            raise ValueError(f"Vendedor {item.vendedor_id} não existe")
         if produto is None:
             raise ValueError(f"Produto {item.produto_id} não existe")
 
         venda.itens.append(
             ItemVenda(
                 produto_id=item.produto_id,
-                vendedor_id=item.vendedor_id,
+                # dono congelado no ato, pelo mesmo motivo do preço: se o produto
+                # mudar de dono depois, a venda antiga continua creditada a quem vendeu
+                vendedor_id=produto.vendedor_id,
                 quantidade=item.quantidade,
                 preco_unitario=produto.preco,
             )

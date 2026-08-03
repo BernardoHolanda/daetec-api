@@ -11,9 +11,7 @@ def test_relatorio_soma_venda_do_dia(client_admin, produto, vendedor):
         "/vendas",
         json={
             "forma_pagamento": "dinheiro",
-            "itens": [
-                {"produto_id": produto.id, "vendedor_id": vendedor.id, "quantidade": 2}
-            ],
+            "itens": [{"produto_id": produto.id, "quantidade": 2}],
         },
     )
     resp = client_admin.get("/relatorio")
