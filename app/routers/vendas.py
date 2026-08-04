@@ -1,3 +1,5 @@
+from datetime import date
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
@@ -25,8 +27,17 @@ def criar(
 
 
 @router.get("", response_model=list[VendaRead])
-def listar(db: Session = Depends(get_db)):
-    return crud_venda.listar_vendas(db)
+def listar(
+    minhas: bool = False,
+    dia: date | None = None,
+    db: Session = Depends(get_db),
+    usuario: Usuario = Depends(get_current_user),
+):
+    return crud_venda.listar_vendas(
+        db,
+        registrado_por_id=usuario.id if minhas else None,
+        dia=dia,
+    )
 
 
 @router.get("/{venda_id}", response_model=VendaRead)

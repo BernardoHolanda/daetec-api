@@ -56,8 +56,28 @@ def criar_venda(db: Session, dados: VendaCreate, registrado_por_id: int) -> Vend
     return venda
 
 
-def listar_vendas(db: Session) -> list[Venda]:
-    return list(db.scalars(select(Venda).where(Venda.cancelada_em.is_(None))).all())
+def _intervalo_do_dia(dia: date) -> tuple[datetime, datetime]:
+    return (
+        datetime.combine(dia, time.min, tzinfo=FUSO_MANAUS),
+        datetime.combine(dia, time.max, tzinfo=FUSO_MANAUS),
+    )
+
+
+def listar_vendas(
+    db: Session,
+    registrado_por_id: int | None = None,
+    dia: date | None = None,
+) -> list[Venda]:
+    consulta = select(Venda).where(Venda.cancelada_em.is_(None))
+
+    if registrado_por_id is not None:
+        consulta = consulta.where(Venda.registrado_por_id == registrado_por_id)
+
+    if dia is not None:
+        inicio, fim = _intervalo_do_dia(dia)
+        consulta = consulta.where(Venda.data_hora.between(inicio, fim))
+
+    return list(db.scalars(consulta.order_by(Venda.data_hora.desc())).all())
 
 
 def obter_venda(db: Session, venda_id: int) -> Venda | None:
@@ -131,8 +151,7 @@ def fechar_conta(
 def recebido_por_vendedor(
     db: Session, dia: date
 ) -> dict[int, dict[FormaPagamento, Decimal]]:
-    inicio = datetime.combine(dia, time.min, tzinfo=FUSO_MANAUS)
-    fim = datetime.combine(dia, time.max, tzinfo=FUSO_MANAUS)
+    inicio, fim = _intervalo_do_dia(dia)
 
     linhas = db.execute(
         select(
