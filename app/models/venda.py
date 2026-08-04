@@ -19,7 +19,10 @@ class Venda(Base):
         DateTime(timezone=True), server_default=func.now()
     )
 
-    itens: Mapped[list["ItemVenda"]] = relationship(back_populates="venda")
+    # selectin, não joined: coleção com joined multiplica as linhas da venda
+    itens: Mapped[list["ItemVenda"]] = relationship(
+        back_populates="venda", lazy="selectin"
+    )
     forma_pagamento: Mapped[FormaPagamento | None]
 
     cliente_id: Mapped[int | None] = mapped_column(ForeignKey("clientes.id"))
