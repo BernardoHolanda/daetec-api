@@ -103,7 +103,9 @@ def listar_conta(db: Session, cliente_id: int) -> list[Venda]:
     )
 
 
-def contas_abertas(db: Session) -> list[Row[tuple[int, str, Decimal, int, datetime]]]:
+def contas_abertas(
+    db: Session,
+) -> list[Row[tuple[int, str, Decimal, int, datetime, datetime]]]:
     """Uma linha por cliente devedor, da maior dívida pra menor."""
     total = func.sum(ItemVenda.quantidade * ItemVenda.preco_unitario)
 
@@ -115,6 +117,7 @@ def contas_abertas(db: Session) -> list[Row[tuple[int, str, Decimal, int, dateti
                 total.label("total"),
                 # distinct porque o join com itens repete a venda uma vez por item
                 func.count(func.distinct(Venda.id)).label("consumos"),
+                func.min(Venda.data_hora).label("primeiro_consumo"),
                 func.max(Venda.data_hora).label("ultimo_consumo"),
             )
             .join(ItemVenda, ItemVenda.venda_id == Venda.id)

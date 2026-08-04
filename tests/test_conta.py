@@ -67,6 +67,7 @@ def test_contas_conta_vendas_e_nao_itens(client_comum, produto, outro_produto, c
 
     assert conta["consumos"] == 1
     assert Decimal(conta["total"]) == Decimal("8")
+    assert conta["primeiro_consumo"] == conta["ultimo_consumo"]
 
 
 def test_contas_ignora_conta_ja_fechada(client_comum, produto, cliente):

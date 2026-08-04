@@ -57,6 +57,7 @@ class ContaAbertaRead(BaseModel):
     nome: str
     total: Decimal
     consumos: int
+    primeiro_consumo: datetime
     ultimo_consumo: datetime
 
     model_config = {"from_attributes": True}
