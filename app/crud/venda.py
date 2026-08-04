@@ -1,7 +1,7 @@
 from datetime import date, datetime, time, timedelta, timezone
 from decimal import Decimal
 
-from sqlalchemy import func, select
+from sqlalchemy import Row, func, select
 from sqlalchemy.orm import Session
 
 from app.enums import FormaPagamento
@@ -79,6 +79,33 @@ def listar_conta(db: Session, cliente_id: int) -> list[Venda]:
                 Venda.paga_em.is_(None),
                 Venda.cancelada_em.is_(None),
             )
+        ).all()
+    )
+
+
+def contas_abertas(db: Session) -> list[Row[tuple[int, str, Decimal, int, datetime]]]:
+    """Uma linha por cliente devedor, da maior dívida pra menor."""
+    total = func.sum(ItemVenda.quantidade * ItemVenda.preco_unitario)
+
+    return list(
+        db.execute(
+            select(
+                Venda.cliente_id,
+                Cliente.nome,
+                total.label("total"),
+                # distinct porque o join com itens repete a venda uma vez por item
+                func.count(func.distinct(Venda.id)).label("consumos"),
+                func.max(Venda.data_hora).label("ultimo_consumo"),
+            )
+            .join(ItemVenda, ItemVenda.venda_id == Venda.id)
+            .join(Cliente, Cliente.id == Venda.cliente_id)
+            .where(
+                Venda.paga_em.is_(None),
+                Venda.cliente_id.is_not(None),
+                Venda.cancelada_em.is_(None),
+            )
+            .group_by(Venda.cliente_id, Cliente.nome)
+            .order_by(total.desc())
         ).all()
     )
 

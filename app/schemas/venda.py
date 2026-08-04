@@ -50,3 +50,18 @@ class ContaRead(BaseModel):
 
 class FecharConta(BaseModel):
     forma_pagamento: FormaPagamento
+
+
+class ContaAbertaRead(BaseModel):
+    cliente_id: int
+    nome: str
+    total: Decimal
+    consumos: int
+    ultimo_consumo: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class ContasAbertasRead(BaseModel):
+    total: Decimal
+    contas: list[ContaAbertaRead]

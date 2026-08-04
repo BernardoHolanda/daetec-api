@@ -36,3 +36,46 @@ def test_fechar_conta_vazia_400(client_comum, cliente):
         f"/clientes/{cliente.id}/conta/fechar", json={"forma_pagamento": "pix"}
     )
     assert resp.status_code == 400
+
+
+def test_contas_lista_devedores_do_maior_pro_menor(client_comum, produto, cliente):
+    outro_id = client_comum.post("/clientes", json={"nome": "ANA"}).json()["id"]
+    _venda_fiado(client_comum, cliente.id, produto.id, 3)  # 15
+    _venda_fiado(client_comum, outro_id, produto.id, 1)  # 5
+
+    corpo = client_comum.get("/contas").json()
+
+    assert Decimal(corpo["total"]) == Decimal("20")
+    assert [c["nome"] for c in corpo["contas"]] == ["MARIA", "ANA"]
+    assert Decimal(corpo["contas"][0]["total"]) == Decimal("15")
+
+
+def test_contas_conta_vendas_e_nao_itens(client_comum, produto, outro_produto, cliente):
+    """Uma venda com 2 itens é 1 consumo — o join com itens não pode inflar a contagem."""
+    client_comum.post(
+        "/vendas",
+        json={
+            "cliente_id": cliente.id,
+            "itens": [
+                {"produto_id": produto.id, "quantidade": 1},
+                {"produto_id": outro_produto.id, "quantidade": 1},
+            ],
+        },
+    )
+
+    conta = client_comum.get("/contas").json()["contas"][0]
+
+    assert conta["consumos"] == 1
+    assert Decimal(conta["total"]) == Decimal("8")
+
+
+def test_contas_ignora_conta_ja_fechada(client_comum, produto, cliente):
+    _venda_fiado(client_comum, cliente.id, produto.id, 2)
+    client_comum.post(
+        f"/clientes/{cliente.id}/conta/fechar", json={"forma_pagamento": "pix"}
+    )
+
+    corpo = client_comum.get("/contas").json()
+
+    assert corpo["contas"] == []
+    assert Decimal(corpo["total"]) == Decimal("0")

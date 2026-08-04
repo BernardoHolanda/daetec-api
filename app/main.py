@@ -10,6 +10,7 @@ from app.database import engine
 from app.routers import (
     auth,
     clientes,
+    contas,
     produtos,
     relatorio,
     usuarios,
@@ -32,6 +33,7 @@ app.include_router(produtos.router)
 app.include_router(vendedores.router)
 app.include_router(vendas.router)
 app.include_router(clientes.router)
+app.include_router(contas.router)
 app.include_router(relatorio.router)
 app.include_router(usuarios.router)
 app.include_router(auth.router)

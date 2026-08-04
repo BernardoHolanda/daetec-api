@@ -132,6 +132,14 @@ def produto(db_session, vendedor):
 
 
 @pytest.fixture
+def outro_produto(db_session, vendedor):
+    p = Produto(nome="SUCO", preco=Decimal("3.00"), vendedor_id=vendedor.id)
+    db_session.add(p)
+    db_session.commit()
+    return p
+
+
+@pytest.fixture
 def cliente(db_session):
     c = Cliente(nome="MARIA")
     db_session.add(c)
