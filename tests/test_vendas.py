@@ -30,7 +30,7 @@ def test_comum_cria_venda_a_vista(client_comum, usuario_comum, produto, vendedor
     assert corpo["forma_pagamento"] == "dinheiro"
     assert Decimal(corpo["itens"][0]["preco_unitario"]) == Decimal("5")
     # o dono não foi enviado pelo cliente: saiu do produto
-    assert corpo["itens"][0]["vendedor_id"] == vendedor.id
+    assert corpo["itens"][0]["vendedor"]["id"] == vendedor.id
 
 
 def test_venda_a_vista_sem_forma_pagamento_400(client_comum, produto):

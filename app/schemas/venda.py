@@ -4,6 +4,8 @@ from decimal import Decimal
 from pydantic import BaseModel, Field
 
 from app.enums import FormaPagamento
+from app.schemas.produto import ProdutoResumo
+from app.schemas.vendedor import VendedorRead
 
 
 class ItemVendaCreate(BaseModel):
@@ -19,8 +21,9 @@ class VendaCreate(BaseModel):
 
 class ItemVendaRead(BaseModel):
     id: int
-    produto_id: int
-    vendedor_id: int
+    # objeto no lugar do id: a tela precisa do nome, e o id vem junto de graça
+    produto: ProdutoResumo
+    vendedor: VendedorRead
     quantidade: int
     preco_unitario: Decimal
 
@@ -42,6 +45,7 @@ class VendaRead(BaseModel):
 
 class ContaRead(BaseModel):
     cliente_id: int
+    nome: str
     total: Decimal
     vendas: list[VendaRead]
 

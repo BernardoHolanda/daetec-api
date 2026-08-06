@@ -80,3 +80,36 @@ def test_contas_ignora_conta_ja_fechada(client_comum, produto, cliente):
 
     assert corpo["contas"] == []
     assert Decimal(corpo["total"]) == Decimal("0")
+
+
+def test_conta_traz_os_nomes_que_a_tela_mostra(
+    client_comum, produto, outro_produto, cliente, vendedor
+):
+    """A tela do detalhe não faz busca por id: nome de cliente, produto e vendedor vêm na resposta."""
+    client_comum.post(
+        "/vendas",
+        json={
+            "cliente_id": cliente.id,
+            "itens": [
+                {"produto_id": produto.id, "quantidade": 2},
+                {"produto_id": outro_produto.id, "quantidade": 1},
+            ],
+        },
+    )
+
+    corpo = client_comum.get(f"/clientes/{cliente.id}/conta").json()
+
+    assert corpo["nome"] == "MARIA"
+    itens = corpo["vendas"][0]["itens"]
+    assert [i["produto"]["nome"] for i in itens] == ["BATATA", "SUCO"]
+    assert itens[0]["produto"]["id"] == produto.id
+    assert itens[0]["vendedor"] == {"id": vendedor.id, "nome": "JOAO"}
+
+
+def test_conta_vem_da_venda_mais_nova_pra_mais_antiga(client_comum, produto, cliente):
+    primeira = _venda_fiado(client_comum, cliente.id, produto.id, 1).json()["id"]
+    segunda = _venda_fiado(client_comum, cliente.id, produto.id, 1).json()["id"]
+
+    corpo = client_comum.get(f"/clientes/{cliente.id}/conta").json()
+
+    assert [v["id"] for v in corpo["vendas"]] == [segunda, primeira]

@@ -49,7 +49,9 @@ def conta(cliente_id: int, db: Session = Depends(get_db)):
 
     vendas = crud_venda.listar_conta(db, cliente_id)
     total = crud_venda.total_das_vendas(vendas)
-    return ContaRead(cliente_id=cliente_id, total=total, vendas=vendas)
+    return ContaRead(
+        cliente_id=cliente_id, nome=cliente.nome, total=total, vendas=vendas
+    )
 
 
 @router.post("/{cliente_id}/conta/fechar", response_model=ContaRead)
@@ -64,4 +66,6 @@ def fechar(cliente_id: int, dados: FecharConta, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail=str(e))
 
     total = crud_venda.total_das_vendas(vendas)
-    return ContaRead(cliente_id=cliente_id, total=total, vendas=vendas)
+    return ContaRead(
+        cliente_id=cliente_id, nome=cliente.nome, total=total, vendas=vendas
+    )

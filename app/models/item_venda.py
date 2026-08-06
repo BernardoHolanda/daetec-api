@@ -23,5 +23,7 @@ class ItemVenda(Base):
     preco_unitario: Mapped[Decimal] = mapped_column(Numeric(10, 2))
 
     venda: Mapped["Venda"] = relationship(back_populates="itens")
-    produto: Mapped["Produto"] = relationship()
-    vendedor: Mapped["Vendedor"] = relationship(back_populates="itens")
+    # joined: N:1, o JOIN só acrescenta colunas na mesma linha — e a resposta
+    # da conta precisa dos dois nomes em todo item
+    produto: Mapped["Produto"] = relationship(lazy="joined")
+    vendedor: Mapped["Vendedor"] = relationship(back_populates="itens", lazy="joined")

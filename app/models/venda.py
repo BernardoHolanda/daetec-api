@@ -19,9 +19,10 @@ class Venda(Base):
         DateTime(timezone=True), server_default=func.now()
     )
 
-    # selectin, não joined: coleção com joined multiplica as linhas da venda
+    # selectin, não joined: coleção com joined multiplica as linhas da venda.
+    # order_by porque sem ele o banco devolve na ordem que quiser, e a tela lista item a item
     itens: Mapped[list["ItemVenda"]] = relationship(
-        back_populates="venda", lazy="selectin"
+        back_populates="venda", lazy="selectin", order_by="ItemVenda.id"
     )
     forma_pagamento: Mapped[FormaPagamento | None]
 

@@ -20,3 +20,12 @@ class ProdutoRead(ProdutoBase):
     vendedor: VendedorRead
 
     model_config = {"from_attributes": True}
+
+
+class ProdutoResumo(BaseModel):
+    """Produto dentro de outra resposta: sem o preço atual, que não é o da venda."""
+
+    id: int
+    nome: str
+
+    model_config = {"from_attributes": True}

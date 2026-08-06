@@ -94,11 +94,14 @@ def cancelar_venda(db: Session, venda: Venda) -> Venda:
 def listar_conta(db: Session, cliente_id: int) -> list[Venda]:
     return list(
         db.scalars(
-            select(Venda).where(
+            select(Venda)
+            .where(
                 Venda.cliente_id == cliente_id,
                 Venda.paga_em.is_(None),
                 Venda.cancelada_em.is_(None),
             )
+            # id como desempate: duas vendas no mesmo instante precisam de ordem estável
+            .order_by(Venda.data_hora.desc(), Venda.id.desc())
         ).all()
     )
 
