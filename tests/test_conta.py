@@ -50,24 +50,27 @@ def test_contas_lista_devedores_do_maior_pro_menor(client_comum, produto, client
     assert Decimal(corpo["contas"][0]["total"]) == Decimal("15")
 
 
-def test_contas_conta_vendas_e_nao_itens(client_comum, produto, outro_produto, cliente):
-    """Uma venda com 2 itens é 1 consumo — o join com itens não pode inflar a contagem."""
+def test_contas_soma_a_quantidade_dos_itens(
+    client_comum, produto, outro_produto, cliente
+):
+    """3 + 2 numa venda e 1 em outra dão 6 consumos — não 2 vendas nem 3 linhas de item."""
     client_comum.post(
         "/vendas",
         json={
             "cliente_id": cliente.id,
             "itens": [
-                {"produto_id": produto.id, "quantidade": 1},
-                {"produto_id": outro_produto.id, "quantidade": 1},
+                {"produto_id": produto.id, "quantidade": 3},
+                {"produto_id": outro_produto.id, "quantidade": 2},
             ],
         },
     )
+    _venda_fiado(client_comum, cliente.id, produto.id, 1)
 
     conta = client_comum.get("/contas").json()["contas"][0]
 
-    assert conta["consumos"] == 1
-    assert Decimal(conta["total"]) == Decimal("8")
-    assert conta["primeiro_consumo"] == conta["ultimo_consumo"]
+    assert conta["consumos"] == 6
+    assert Decimal(conta["total"]) == Decimal("26")  # 3×5 + 2×3 + 1×5
+    assert conta["primeiro_consumo"] <= conta["ultimo_consumo"]
 
 
 def test_contas_ignora_conta_ja_fechada(client_comum, produto, cliente):

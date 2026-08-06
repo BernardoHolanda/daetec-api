@@ -118,8 +118,8 @@ def contas_abertas(
                 Venda.cliente_id,
                 Cliente.nome,
                 total.label("total"),
-                # distinct porque o join com itens repete a venda uma vez por item
-                func.count(func.distinct(Venda.id)).label("consumos"),
+                # consumo é item consumido: soma quantidade, não conta vendas
+                func.sum(ItemVenda.quantidade).label("consumos"),
                 func.min(Venda.data_hora).label("primeiro_consumo"),
                 func.max(Venda.data_hora).label("ultimo_consumo"),
             )
