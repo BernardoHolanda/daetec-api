@@ -1,0 +1,23 @@
+# segredo nunca entra em imagem: ela vai pro registro e as camadas são legíveis
+.env
+.env.*
+
+# histórico do git é grande e não serve pra rodar
+.git
+.gitignore
+.github
+
+# só de desenvolvimento
+.devcontainer
+requirements-dev.txt
+tests
+pytest.ini
+ruff.toml
+docker-compose.yml
+README.md
+
+# lixo de execução
+__pycache__
+*.pyc
+.pytest_cache
+.ruff_cache
