@@ -12,8 +12,14 @@ fechamento de caixa.
 
 - **Autenticação** por JWT com dois papéis: `admin` e `comum`.
 - **Produtos, vendedores e clientes** (CRUD, nomes normalizados em MAIÚSCULA, nomes únicos).
+  A remoção é barrada pela **chave estrangeira** quando o cadastro já tem histórico —
+  quem vendeu, comprou ou é dono de produto não sai (409).
+- **Estoque opcional** por produto: `NULL` = não controlado (vende à vontade), `0` =
+  esgotado. A venda dá baixa, o cancelamento devolve, e um **CHECK `estoque >= 0`** no
+  banco impede que duas vendas simultâneas levem o mesmo último item.
 - **Vendas** à vista (com forma de pagamento) ou **fiado** (lançadas na conta do cliente),
-  registrando quem fez o lançamento.
+  registrando quem fez o lançamento. Cancelamento é **soft delete** (`cancelada_em`) e
+  idempotente.
 - **Contas** — acompanha o fiado em aberto por cliente e permite fechar a conta.
 - **Relatório de fim de dia** — total recebido por vendedor e por forma de pagamento,
   contas em aberto e devedores, agregado no banco (fuso de Manaus, UTC−4).
@@ -60,9 +66,10 @@ Documentação interativa (Swagger) em **http://localhost:8000/docs**.
 
 ## Testes e qualidade de código
 
-Suíte em **pytest**, rodando contra um banco Postgres de teste (`daetec_test`) com
-isolamento por transação (rollback a cada teste). Lint e formatação usam **Ruff**
-(config em `ruff.toml`).
+**52 testes** em **pytest**, rodando contra um banco Postgres de teste (`daetec_test`) com
+isolamento por transação (rollback a cada teste). Rodam também no **GitHub Actions** a cada
+push (`.github/workflows/ci.yml`), com o Postgres subindo como *service container*. Lint e
+formatação usam **Ruff** (config em `ruff.toml`).
 
 ```bash
 # dentro do container
