@@ -63,7 +63,13 @@ def client(db_session):
     """TestClient com o get_db trocado pelal)."""
 
     def get_db_de_teste():
-        yield db_session
+        # espelha o get_db real: sem o rollback, a sessão compartilhada do teste
+        # quebraria em tudo que viesse depois de um IntegrityError
+        try:
+            yield db_session
+        except Exception:
+            db_session.rollback()
+            raise
 
     app.dependency_overrides[get_db] = get_db_de_teste
     with TestClient(app) as c:

@@ -18,5 +18,9 @@ def get_db():
     db = SessionLocal()
     try:
         yield db
+    except Exception:
+        # sessão que falhou no flush fica inutilizável até o rollback
+        db.rollback()
+        raise
     finally:
         db.close()
