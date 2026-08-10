@@ -41,7 +41,7 @@ app.include_router(auth.router)
 
 @app.get("/")
 def raiz():
-    return {"mensagem": "Olá mundo — DATEC API esta no ar!"}
+    return {"mensagem": "Olá mundo — DAETEC API está no ar!"}
 
 
 @app.get("/health/db")
