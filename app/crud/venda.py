@@ -39,6 +39,12 @@ def criar_venda(db: Session, dados: VendaCreate, registrado_por_id: int) -> Vend
         if produto is None:
             raise ValueError(f"Produto {item.produto_id} não existe")
 
+        # estoque None é produto não controlado — vende sem baixa nenhuma
+        if produto.estoque is not None:
+            if item.quantidade > produto.estoque:
+                raise ValueError(f"{produto.nome}: só há {produto.estoque} em estoque")
+            produto.estoque -= item.quantidade
+
         venda.itens.append(
             ItemVenda(
                 produto_id=item.produto_id,
@@ -85,7 +91,18 @@ def obter_venda(db: Session, venda_id: int) -> Venda | None:
 
 
 def cancelar_venda(db: Session, venda: Venda) -> Venda:
+    # idempotente: cancelar de novo devolveria a mercadoria duas vezes
+    if venda.cancelada_em is not None:
+        return venda
+
     venda.cancelada_em = datetime.now(timezone.utc)
+
+    # venda cancelada já sai de todos os totais; a mercadoria volta pra prateleira
+    for item in venda.itens:
+        produto = db.get(Produto, item.produto_id)
+        if produto is not None and produto.estoque is not None:
+            produto.estoque += item.quantidade
+
     db.commit()
     db.refresh(venda)
     return venda

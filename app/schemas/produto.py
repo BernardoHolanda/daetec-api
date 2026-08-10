@@ -9,6 +9,8 @@ from app.schemas.vendedor import VendedorRead
 class ProdutoBase(BaseModel):
     nome: NomeNormalizado
     preco: Decimal = Field(gt=0)
+    # opcional de propósito: sem estoque informado, o produto não é controlado
+    estoque: int | None = Field(default=None, ge=0)
 
 
 class ProdutoCreate(ProdutoBase):
