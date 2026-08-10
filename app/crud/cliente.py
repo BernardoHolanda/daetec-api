@@ -26,3 +26,9 @@ def atualizar_cliente(db: Session, cliente: Cliente, dados: ClienteCreate) -> Cl
     db.commit()
     db.refresh(cliente)
     return cliente
+
+
+def deletar_cliente(db: Session, cliente: Cliente) -> None:
+    """Quem barra cliente com venda é a FK (NO ACTION): vira 409 no handler."""
+    db.delete(cliente)
+    db.commit()

@@ -42,3 +42,11 @@ def atualizar(vendedor_id: int, dados: VendedorCreate, db: Session = Depends(get
     if vendedor is None:
         raise HTTPException(status_code=404, detail="Vendedor não encontrado")
     return crud_vendedor.atualizar_vendedor(db, vendedor, dados)
+
+
+@router.delete("/{vendedor_id}", status_code=204, dependencies=[Depends(exigir_admin)])
+def deletar(vendedor_id: int, db: Session = Depends(get_db)):
+    vendedor = crud_vendedor.obter_vendedor(db, vendedor_id)
+    if vendedor is None:
+        raise HTTPException(status_code=404, detail="Vendedor não encontrado")
+    crud_vendedor.deletar_vendedor(db, vendedor)

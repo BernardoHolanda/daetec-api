@@ -28,3 +28,9 @@ def atualizar_vendedor(
     db.commit()
     db.refresh(vendedor)
     return vendedor
+
+
+def deletar_vendedor(db: Session, vendedor: Vendedor) -> None:
+    """Quem barra vendedor em uso é a FK (NO ACTION): vira 409 no handler."""
+    db.delete(vendedor)
+    db.commit()

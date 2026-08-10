@@ -41,6 +41,14 @@ def atualizar(cliente_id: int, dados: ClienteCreate, db: Session = Depends(get_d
     return crud_cliente.atualizar_cliente(db, cliente, dados)
 
 
+@router.delete("/{cliente_id}", status_code=204, dependencies=[Depends(exigir_admin)])
+def deletar(cliente_id: int, db: Session = Depends(get_db)):
+    cliente = crud_cliente.obter_cliente(db, cliente_id)
+    if cliente is None:
+        raise HTTPException(status_code=404, detail="Cliente não encontrado")
+    crud_cliente.deletar_cliente(db, cliente)
+
+
 @router.get("/{cliente_id}/conta", response_model=ContaRead)
 def conta(cliente_id: int, db: Session = Depends(get_db)):
     cliente = crud_cliente.obter_cliente(db, cliente_id)
