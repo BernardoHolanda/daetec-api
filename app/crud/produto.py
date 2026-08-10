@@ -13,7 +13,12 @@ def _exigir_vendedor(db: Session, vendedor_id: int) -> None:
 
 def criar_produto(db: Session, dados: ProdutoCreate) -> Produto:
     _exigir_vendedor(db, dados.vendedor_id)
-    produto = Produto(nome=dados.nome, preco=dados.preco, vendedor_id=dados.vendedor_id)
+    produto = Produto(
+        nome=dados.nome,
+        preco=dados.preco,
+        vendedor_id=dados.vendedor_id,
+        estoque=dados.estoque,
+    )
     db.add(produto)
     db.commit()
     db.refresh(produto)
@@ -33,6 +38,7 @@ def atualizar_produto(db: Session, produto: Produto, dados: ProdutoCreate) -> Pr
     produto.nome = dados.nome
     produto.preco = dados.preco
     produto.vendedor_id = dados.vendedor_id
+    produto.estoque = dados.estoque
     db.commit()
     db.refresh(produto)
     return produto

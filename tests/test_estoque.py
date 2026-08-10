@@ -96,6 +96,31 @@ def test_criar_produto_sem_estoque_e_opcional(client_admin, vendedor):
     assert resp.json()["estoque"] is None
 
 
+def test_criar_produto_com_estoque_pela_api(client_admin, vendedor):
+    """A fixture monta o Produto direto no banco; este passa pelo crud — que era onde faltava."""
+    resp = client_admin.post(
+        "/produtos",
+        json={"nome": "agua", "preco": 3, "vendedor_id": vendedor.id, "estoque": 5},
+    )
+    assert resp.status_code == 201
+    assert resp.json()["estoque"] == 5
+    assert client_admin.get(f"/produtos/{resp.json()['id']}").json()["estoque"] == 5
+
+
+def test_editar_produto_ajusta_o_estoque(client_admin, produto, vendedor):
+    resp = client_admin.put(
+        f"/produtos/{produto.id}",
+        json={
+            "nome": produto.nome,
+            "preco": 5,
+            "vendedor_id": vendedor.id,
+            "estoque": 7,
+        },
+    )
+    assert resp.status_code == 200
+    assert client_admin.get(f"/produtos/{produto.id}").json()["estoque"] == 7
+
+
 def test_estoque_negativo_recusado_na_entrada(client_admin, vendedor):
     resp = client_admin.post(
         "/produtos",
