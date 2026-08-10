@@ -73,8 +73,13 @@ def listar_vendas(
     db: Session,
     registrado_por_id: int | None = None,
     dia: date | None = None,
+    incluir_canceladas: bool = False,
 ) -> list[Venda]:
-    consulta = select(Venda).where(Venda.cancelada_em.is_(None))
+    consulta = select(Venda)
+
+    # o padrão esconde cancelada; quem revisa o dia precisa vê-la pra saber o que já desfez
+    if not incluir_canceladas:
+        consulta = consulta.where(Venda.cancelada_em.is_(None))
 
     if registrado_por_id is not None:
         consulta = consulta.where(Venda.registrado_por_id == registrado_por_id)

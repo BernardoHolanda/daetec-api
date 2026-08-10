@@ -127,3 +127,22 @@ def test_estoque_negativo_recusado_na_entrada(client_admin, vendedor):
         json={"nome": "agua", "preco": 3, "vendedor_id": vendedor.id, "estoque": -1},
     )
     assert resp.status_code == 422
+
+
+def test_venda_cancelada_some_da_lista_mas_volta_com_o_parametro(
+    client_admin, produto, cliente
+):
+    venda_id = client_admin.post(
+        "/vendas",
+        json={
+            "cliente_id": cliente.id,
+            "itens": [{"produto_id": produto.id, "quantidade": 1}],
+        },
+    ).json()["id"]
+    client_admin.delete(f"/vendas/{venda_id}")
+
+    assert client_admin.get("/vendas").json() == []
+
+    canceladas = client_admin.get("/vendas?incluir_canceladas=true").json()
+    assert [v["id"] for v in canceladas] == [venda_id]
+    assert canceladas[0]["cancelada_em"] is not None

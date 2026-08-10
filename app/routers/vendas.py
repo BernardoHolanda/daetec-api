@@ -30,6 +30,7 @@ def criar(
 def listar(
     minhas: bool = False,
     dia: date | None = None,
+    incluir_canceladas: bool = False,
     db: Session = Depends(get_db),
     usuario: Usuario = Depends(get_current_user),
 ):
@@ -37,6 +38,7 @@ def listar(
         db,
         registrado_por_id=usuario.id if minhas else None,
         dia=dia,
+        incluir_canceladas=incluir_canceladas,
     )
 
 
