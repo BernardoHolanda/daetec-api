@@ -1,0 +1,9 @@
+# As dependências que ESTE projeto escolheu, sem versão.
+# O que realmente é instalado está no requirements.txt, com tudo travado.
+fastapi[standard]
+sqlalchemy
+psycopg[binary]
+alembic
+bcrypt
+pyjwt
+email-validator

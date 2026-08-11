@@ -1,3 +1,5 @@
-pytest
-pytest
-ruff
+# Só de desenvolvimento — não entra na imagem de produção.
+# ruff travado de propósito: versão nova muda regra de lint e deixa o CI vermelho
+# sem ninguém ter tocado no código.
+pytest==9.1.1
+ruff==0.16.2
