@@ -21,7 +21,8 @@ class Produto(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     nome: Mapped[str] = mapped_column(unique=True)
     preco: Mapped[Decimal] = mapped_column(Numeric(10, 2))
-    vendedor_id: Mapped[int] = mapped_column(ForeignKey("vendedores.id"))
+    # FK não ganha índice sozinho: sem ele, filtrar produto por vendedor varre a tabela
+    vendedor_id: Mapped[int] = mapped_column(ForeignKey("vendedores.id"), index=True)
     # NULL = estoque não controlado (vende à vontade); 0 = esgotado
     estoque: Mapped[int | None] = mapped_column(default=None)
 

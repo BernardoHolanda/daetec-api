@@ -16,9 +16,10 @@ class ItemVenda(Base):
     __tablename__ = "itens_venda"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    venda_id: Mapped[int] = mapped_column(ForeignKey("vendas.id"))
-    produto_id: Mapped[int] = mapped_column(ForeignKey("produtos.id"))
-    vendedor_id: Mapped[int] = mapped_column(ForeignKey("vendedores.id"))
+    # o selectin de Venda.itens roda "WHERE venda_id IN (...)" a cada venda carregada
+    venda_id: Mapped[int] = mapped_column(ForeignKey("vendas.id"), index=True)
+    produto_id: Mapped[int] = mapped_column(ForeignKey("produtos.id"), index=True)
+    vendedor_id: Mapped[int] = mapped_column(ForeignKey("vendedores.id"), index=True)
     quantidade: Mapped[int]
     preco_unitario: Mapped[Decimal] = mapped_column(Numeric(10, 2))
 
