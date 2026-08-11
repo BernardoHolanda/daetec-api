@@ -2,7 +2,11 @@ name: daetec
 
 services:
   api:
-    build: .
+    # target: dev — o estágio com git, que o Dev Container precisa.
+    # Sem isso o compose construiria o último estágio (produção, sem git).
+    build:
+      context: .
+      target: dev
     hostname: daetec-api
     user: appuser
     ports:
