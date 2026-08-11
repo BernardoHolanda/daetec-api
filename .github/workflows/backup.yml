@@ -1,0 +1,53 @@
+name: Backup do banco
+
+on:
+  # Todo domingo às 06:00 em Manaus. O cron do GitHub é SEMPRE em UTC — não existe
+  # fuso configurável — então 06:00 aqui (UTC-4) vira 10:00 lá. O 0 no fim é domingo.
+  schedule:
+    - cron: "0 10 * * 0"
+  # Habilita o botão "Run workflow" na aba Actions, pra rodar na hora que quiser.
+  workflow_dispatch:
+
+jobs:
+  dump:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Gerar o dump
+        id: dump
+        env:
+          # O segredo é injetado aqui; nunca aparece no log.
+          DATABASE_URL: ${{ secrets.NEON_DATABASE_URL }}
+        run: |
+          if [ -z "$DATABASE_URL" ]; then
+            echo "segredo NEON_DATABASE_URL não está configurado no repositório" >&2
+            exit 1
+          fi
+
+          # pg_dump não entende "+psycopg" (dialeto do SQLAlchemy, não da URL)
+          export URL="${DATABASE_URL/+psycopg/}"
+
+          # O runner traz o cliente do Postgres 16, e o pg_dump se recusa a falar
+          # com servidor mais novo que ele. A imagem oficial do 17 resolve.
+          # -e URL (sem valor) passa a variável do ambiente sem escrevê-la na linha de comando.
+          # --no-owner/--no-privileges: restaura em qualquer banco, não só num com o mesmo dono.
+          docker run --rm -e URL postgres:17 \
+            sh -c 'pg_dump "$URL" --no-owner --no-privileges' | gzip > backup.sql.gz
+
+          # Backup que ninguém confere não é backup: dump vazio também "passa".
+          tamanho=$(stat -c%s backup.sql.gz)
+          echo "tamanho: $tamanho bytes"
+          if [ "$tamanho" -lt 1000 ]; then
+            echo "dump suspeito de vazio — abortando pra falha ficar visível" >&2
+            exit 1
+          fi
+
+          echo "data=$(date -u +%Y-%m-%d)" >> "$GITHUB_OUTPUT"
+
+      - name: Guardar o arquivo
+        uses: actions/upload-artifact@v4
+        with:
+          name: backup-${{ steps.dump.outputs.data }}
+          path: backup.sql.gz
+          # 90 dias é o teto do plano gratuito
+          retention-days: 90
