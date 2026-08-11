@@ -4,7 +4,9 @@ from datetime import datetime, timedelta, timezone
 import bcrypt
 import jwt
 
-JWT_SECRET = os.getenv("JWT_SECRET")
+# environ[] em vez de getenv(): sem o segredo o processo tem que morrer no boot.
+# Com getenv, ele subia com None e só quebrava no primeiro login bem-sucedido.
+JWT_SECRET = os.environ["JWT_SECRET"]
 JWT_ALGORITHM = "HS256"
 TOKEN_EXPIRA_MINUTOS = 60
 
