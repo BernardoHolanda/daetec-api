@@ -10,3 +10,6 @@ __pycache__/
 
 # Variáveis de ambiente / segredos
 .env
+
+# Atalho de editor: preferência de quem abre, não configuração do projeto
+*.code-workspace
