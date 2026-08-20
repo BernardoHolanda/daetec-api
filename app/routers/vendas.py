@@ -1,12 +1,9 @@
 from datetime import date
 
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
 
 from app.crud import venda as crud_venda
-from app.database import get_db
-from app.dependencies import exigir_admin, get_current_user
-from app.models.usuario import Usuario
+from app.dependencies import DbSession, UsuarioLogado, exigir_admin, get_current_user
 from app.schemas.venda import VendaCreate, VendaRead
 
 router = APIRouter(
@@ -15,11 +12,7 @@ router = APIRouter(
 
 
 @router.post("", response_model=VendaRead, status_code=201)
-def criar(
-    dados: VendaCreate,
-    db: Session = Depends(get_db),
-    usuario: Usuario = Depends(get_current_user),
-):
+def criar(dados: VendaCreate, db: DbSession, usuario: UsuarioLogado):
     try:
         return crud_venda.criar_venda(db, dados, registrado_por_id=usuario.id)
     except ValueError as e:
@@ -28,22 +21,24 @@ def criar(
 
 @router.get("", response_model=list[VendaRead])
 def listar(
+    db: DbSession,
+    usuario: UsuarioLogado,
     minhas: bool = False,
-    dia: date | None = None,
+    inicio: date | None = None,
+    fim: date | None = None,
     incluir_canceladas: bool = False,
-    db: Session = Depends(get_db),
-    usuario: Usuario = Depends(get_current_user),
 ):
     return crud_venda.listar_vendas(
         db,
         registrado_por_id=usuario.id if minhas else None,
-        dia=dia,
+        inicio=inicio,
+        fim=fim,
         incluir_canceladas=incluir_canceladas,
     )
 
 
 @router.get("/{venda_id}", response_model=VendaRead)
-def obter(venda_id: int, db: Session = Depends(get_db)):
+def obter(venda_id: int, db: DbSession):
     venda = crud_venda.obter_venda(db, venda_id)
     if venda is None:
         raise HTTPException(status_code=404, detail="Venda não encontrada")
@@ -53,7 +48,7 @@ def obter(venda_id: int, db: Session = Depends(get_db)):
 @router.delete(
     "/{venda_id}", response_model=VendaRead, dependencies=[Depends(exigir_admin)]
 )
-def cancelar(venda_id: int, db: Session = Depends(get_db)):
+def cancelar(venda_id: int, db: DbSession):
     venda = crud_venda.obter_venda(db, venda_id)
     if venda is None:
         raise HTTPException(status_code=404, detail="Venda não encontrada")

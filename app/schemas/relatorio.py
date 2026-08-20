@@ -22,5 +22,7 @@ class VendedorRelatorioRead(BaseModel):
 
 
 class RelatorioRead(BaseModel):
-    data: date
+    # o escopo volta na resposta: é ele que ensina ao front qual é o "hoje" do fuso de Manaus
+    inicio: date
+    fim: date
     vendedores: list[VendedorRelatorioRead]

@@ -94,7 +94,8 @@ def test_filtro_por_dia(client_comum, db_session, produto):
     db_session.commit()
     recente = _venda(client_comum, produto.id)
 
-    de_janeiro = client_comum.get("/vendas", params={"dia": "2026-01-05"}).json()
+    # uma ponta só: o backend espelha e vira dia único
+    de_janeiro = client_comum.get("/vendas", params={"inicio": "2026-01-05"}).json()
 
     assert [v["id"] for v in de_janeiro] == [antiga]
     assert recente not in [v["id"] for v in de_janeiro]
@@ -108,8 +109,11 @@ def test_dia_usa_o_fuso_de_manaus(client_comum, db_session, produto):
     )
     db_session.commit()
 
-    assert len(client_comum.get("/vendas", params={"dia": "2026-03-10"}).json()) == 1
-    assert len(client_comum.get("/vendas", params={"dia": "2026-03-11"}).json()) == 0
+    def no_dia(dia):
+        return client_comum.get("/vendas", params={"inicio": dia, "fim": dia}).json()
+
+    assert len(no_dia("2026-03-10")) == 1
+    assert len(no_dia("2026-03-11")) == 0
 
 
 def test_vendas_vem_da_mais_nova_pra_mais_antiga(client_comum, db_session, produto):

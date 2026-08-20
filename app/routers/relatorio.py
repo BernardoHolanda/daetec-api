@@ -2,13 +2,11 @@ from datetime import date
 from decimal import Decimal
 
 from fastapi import APIRouter, Depends
-from sqlalchemy.orm import Session
 
 from app.crud import cliente as crud_cliente
 from app.crud import venda as crud_venda
 from app.crud import vendedor as crud_vendedor
-from app.database import get_db
-from app.dependencies import exigir_admin
+from app.dependencies import DbSession, exigir_admin
 from app.schemas.relatorio import DevedorRead, RelatorioRead, VendedorRelatorioRead
 
 router = APIRouter(
@@ -17,11 +15,14 @@ router = APIRouter(
 
 
 @router.get("", response_model=RelatorioRead)
-def relatorio(dia: date | None = None, db: Session = Depends(get_db)):
-    if dia is None:
-        dia = crud_venda.hoje_manaus()
+def relatorio(
+    db: DbSession,
+    inicio: date | None = None,
+    fim: date | None = None,
+):
+    inicio, fim = crud_venda.normalizar_escopo(inicio, fim)
 
-    recebido = crud_venda.recebido_por_vendedor(db, dia)
+    recebido = crud_venda.recebido_por_vendedor(db, inicio, fim)
     contas = crud_venda.contas_abertas_por_vendedor(db)
 
     nomes_vendedor = {v.id: v.nome for v in crud_vendedor.listar_vendedores(db)}
@@ -50,4 +51,4 @@ def relatorio(dia: date | None = None, db: Session = Depends(get_db)):
             )
         )
 
-    return RelatorioRead(data=dia, vendedores=vendedores)
+    return RelatorioRead(inicio=inicio, fim=fim, vendedores=vendedores)
