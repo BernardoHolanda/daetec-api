@@ -1,3 +1,5 @@
+from typing import Annotated
+
 import jwt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
@@ -11,10 +13,11 @@ from app.security import JWT_ALGORITHM, JWT_SECRET
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
+DbSession = Annotated[Session, Depends(get_db)]
+TokenBearer = Annotated[str, Depends(oauth2_scheme)]
 
-def get_current_user(
-    token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)
-) -> Usuario:
+
+def get_current_user(token: TokenBearer, db: DbSession) -> Usuario:
     credenciais_invalidas = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Credenciais inválidas",
@@ -36,7 +39,10 @@ def get_current_user(
     return usuario
 
 
-def exigir_admin(usuario: Usuario = Depends(get_current_user)) -> Usuario:
+UsuarioLogado = Annotated[Usuario, Depends(get_current_user)]
+
+
+def exigir_admin(usuario: UsuarioLogado) -> Usuario:
     if usuario.papel != PapelUsuario.ADMIN:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,

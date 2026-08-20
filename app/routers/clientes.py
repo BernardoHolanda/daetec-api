@@ -1,10 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
 
 from app.crud import cliente as crud_cliente
 from app.crud import venda as crud_venda
-from app.database import get_db
-from app.dependencies import exigir_admin, get_current_user
+from app.dependencies import DbSession, exigir_admin, get_current_user
 from app.schemas.cliente import ClienteCreate, ClienteRead
 from app.schemas.venda import ContaRead, FecharConta
 
@@ -14,17 +12,17 @@ router = APIRouter(
 
 
 @router.post("", response_model=ClienteRead, status_code=201)
-def criar(dados: ClienteCreate, db: Session = Depends(get_db)):
+def criar(dados: ClienteCreate, db: DbSession):
     return crud_cliente.criar_cliente(db, dados)
 
 
 @router.get("", response_model=list[ClienteRead])
-def listar(db: Session = Depends(get_db)):
+def listar(db: DbSession):
     return crud_cliente.listar_clientes(db)
 
 
 @router.get("/{cliente_id}", response_model=ClienteRead)
-def obter(cliente_id: int, db: Session = Depends(get_db)):
+def obter(cliente_id: int, db: DbSession):
     cliente = crud_cliente.obter_cliente(db, cliente_id)
     if cliente is None:
         raise HTTPException(status_code=404, detail="Cliente não encontrado")
@@ -34,7 +32,7 @@ def obter(cliente_id: int, db: Session = Depends(get_db)):
 @router.put(
     "/{cliente_id}", response_model=ClienteRead, dependencies=[Depends(exigir_admin)]
 )
-def atualizar(cliente_id: int, dados: ClienteCreate, db: Session = Depends(get_db)):
+def atualizar(cliente_id: int, dados: ClienteCreate, db: DbSession):
     cliente = crud_cliente.obter_cliente(db, cliente_id)
     if cliente is None:
         raise HTTPException(status_code=404, detail="Cliente não encontrado")
@@ -42,7 +40,7 @@ def atualizar(cliente_id: int, dados: ClienteCreate, db: Session = Depends(get_d
 
 
 @router.delete("/{cliente_id}", status_code=204, dependencies=[Depends(exigir_admin)])
-def deletar(cliente_id: int, db: Session = Depends(get_db)):
+def deletar(cliente_id: int, db: DbSession):
     cliente = crud_cliente.obter_cliente(db, cliente_id)
     if cliente is None:
         raise HTTPException(status_code=404, detail="Cliente não encontrado")
@@ -50,7 +48,7 @@ def deletar(cliente_id: int, db: Session = Depends(get_db)):
 
 
 @router.get("/{cliente_id}/conta", response_model=ContaRead)
-def conta(cliente_id: int, db: Session = Depends(get_db)):
+def conta(cliente_id: int, db: DbSession):
     cliente = crud_cliente.obter_cliente(db, cliente_id)
     if cliente is None:
         raise HTTPException(status_code=404, detail="Cliente não encontrado")
@@ -63,7 +61,7 @@ def conta(cliente_id: int, db: Session = Depends(get_db)):
 
 
 @router.post("/{cliente_id}/conta/fechar", response_model=ContaRead)
-def fechar(cliente_id: int, dados: FecharConta, db: Session = Depends(get_db)):
+def fechar(cliente_id: int, dados: FecharConta, db: DbSession):
     cliente = crud_cliente.obter_cliente(db, cliente_id)
     if cliente is None:
         raise HTTPException(status_code=404, detail="Cliente não encontrado")

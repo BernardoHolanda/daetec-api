@@ -1,9 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
 
 from app.crud import vendedor as crud_vendedor
-from app.database import get_db
-from app.dependencies import exigir_admin, get_current_user
+from app.dependencies import DbSession, exigir_admin, get_current_user
 from app.schemas.vendedor import VendedorCreate, VendedorRead
 
 router = APIRouter(
@@ -17,17 +15,17 @@ router = APIRouter(
     status_code=201,
     dependencies=[Depends(exigir_admin)],
 )
-def criar(dados: VendedorCreate, db: Session = Depends(get_db)):
+def criar(dados: VendedorCreate, db: DbSession):
     return crud_vendedor.criar_vendedor(db, dados)
 
 
 @router.get("", response_model=list[VendedorRead])
-def listar(db: Session = Depends(get_db)):
+def listar(db: DbSession):
     return crud_vendedor.listar_vendedores(db)
 
 
 @router.get("/{vendedor_id}", response_model=VendedorRead)
-def obter(vendedor_id: int, db: Session = Depends(get_db)):
+def obter(vendedor_id: int, db: DbSession):
     vendedor = crud_vendedor.obter_vendedor(db, vendedor_id)
     if vendedor is None:
         raise HTTPException(status_code=404, detail="Vendedor não encontrado")
@@ -37,7 +35,7 @@ def obter(vendedor_id: int, db: Session = Depends(get_db)):
 @router.put(
     "/{vendedor_id}", response_model=VendedorRead, dependencies=[Depends(exigir_admin)]
 )
-def atualizar(vendedor_id: int, dados: VendedorCreate, db: Session = Depends(get_db)):
+def atualizar(vendedor_id: int, dados: VendedorCreate, db: DbSession):
     vendedor = crud_vendedor.obter_vendedor(db, vendedor_id)
     if vendedor is None:
         raise HTTPException(status_code=404, detail="Vendedor não encontrado")
@@ -45,7 +43,7 @@ def atualizar(vendedor_id: int, dados: VendedorCreate, db: Session = Depends(get
 
 
 @router.delete("/{vendedor_id}", status_code=204, dependencies=[Depends(exigir_admin)])
-def deletar(vendedor_id: int, db: Session = Depends(get_db)):
+def deletar(vendedor_id: int, db: DbSession):
     vendedor = crud_vendedor.obter_vendedor(db, vendedor_id)
     if vendedor is None:
         raise HTTPException(status_code=404, detail="Vendedor não encontrado")
