@@ -2,3 +2,7 @@ extend-exclude = ["alembic"]
 
 [lint]
 extend-select = ["I"]
+
+# FURB157 trocaria Decimal("0") por Decimal(0). Em código de dinheiro a aspa é a mesma
+# regra pra todo valor: sem exceção não existe a dúvida de quando ela vale
+ignore = ["FURB157"]

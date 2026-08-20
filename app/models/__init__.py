@@ -5,4 +5,4 @@ from app.models.usuario import Usuario
 from app.models.venda import Venda
 from app.models.vendedor import Vendedor
 
-__all__ = ["Produto", "Vendedor", "Venda", "ItemVenda", "Cliente", "Usuario"]
+__all__ = ["Cliente", "ItemVenda", "Produto", "Usuario", "Venda", "Vendedor"]
