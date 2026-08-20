@@ -19,6 +19,7 @@ from app.routers import (
 )
 
 app = FastAPI(title="DAETEC API")
+# split sem strip: espaço depois da vírgula no .env vira origem que não casa com nada
 origins = os.getenv("CORS_ORIGINS", "http://localhost:5173").split(",")
 
 app.add_middleware(
@@ -46,6 +47,7 @@ def raiz():
 
 @app.get("/health/db")
 def health_db():
+    """Prova que a API alcança o banco — o `/` sozinho responde mesmo com o banco fora."""
     with engine.connect() as conn:
         conn.execute(text("SELECT 1"))
     return {"db": "ok"}
@@ -53,6 +55,7 @@ def health_db():
 
 @app.exception_handler(IntegrityError)
 def integrity_error_handler(request: Request, exc: IntegrityError):
+    """Erro de integridade do banco vira 409 com mensagem legível, não 500."""
     sqlstate = getattr(getattr(exc, "orig", None), "sqlstate", None)
     if sqlstate == "23503":  # foreign_key_violation
         detail = "Registro em uso por outro recurso — não é possível concluir."

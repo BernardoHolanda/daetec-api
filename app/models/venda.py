@@ -27,7 +27,11 @@ class Venda(Base):
     forma_pagamento: Mapped[FormaPagamento | None]
 
     # index: a conta do cliente filtra por aqui, e apagar cliente checa esta coluna
-    cliente_id: Mapped[int | None] = mapped_column(ForeignKey("clientes.id"), index=True)
+    cliente_id: Mapped[int | None] = mapped_column(
+        ForeignKey("clientes.id"), index=True
+    )
     paga_em: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     cancelada_em: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
-    registrado_por_id: Mapped[int] = mapped_column(ForeignKey("usuarios.id"), index=True)
+    registrado_por_id: Mapped[int] = mapped_column(
+        ForeignKey("usuarios.id"), index=True
+    )

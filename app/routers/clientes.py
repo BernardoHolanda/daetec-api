@@ -13,16 +13,19 @@ router = APIRouter(
 
 @router.post("", response_model=ClienteRead, status_code=201)
 def criar(dados: ClienteCreate, db: DbSession):
+    """Cadastra um cliente. Liberado ao vendedor, que fia na hora."""
     return crud_cliente.criar_cliente(db, dados)
 
 
 @router.get("", response_model=list[ClienteRead])
 def listar(db: DbSession):
+    """Todos os clientes."""
     return crud_cliente.listar_clientes(db)
 
 
 @router.get("/{cliente_id}", response_model=ClienteRead)
 def obter(cliente_id: int, db: DbSession):
+    """Um cliente pelo id."""
     cliente = crud_cliente.obter_cliente(db, cliente_id)
     if cliente is None:
         raise HTTPException(status_code=404, detail="Cliente não encontrado")
@@ -33,6 +36,7 @@ def obter(cliente_id: int, db: DbSession):
     "/{cliente_id}", response_model=ClienteRead, dependencies=[Depends(exigir_admin)]
 )
 def atualizar(cliente_id: int, dados: ClienteCreate, db: DbSession):
+    """Renomeia o cliente. Exige admin."""
     cliente = crud_cliente.obter_cliente(db, cliente_id)
     if cliente is None:
         raise HTTPException(status_code=404, detail="Cliente não encontrado")
@@ -41,6 +45,7 @@ def atualizar(cliente_id: int, dados: ClienteCreate, db: DbSession):
 
 @router.delete("/{cliente_id}", status_code=204, dependencies=[Depends(exigir_admin)])
 def deletar(cliente_id: int, db: DbSession):
+    """Remove o cliente. Recusa com 409 se ele tem venda."""
     cliente = crud_cliente.obter_cliente(db, cliente_id)
     if cliente is None:
         raise HTTPException(status_code=404, detail="Cliente não encontrado")
@@ -49,6 +54,7 @@ def deletar(cliente_id: int, db: DbSession):
 
 @router.get("/{cliente_id}/conta", response_model=ContaRead)
 def conta(cliente_id: int, db: DbSession):
+    """Vendas fiadas em aberto do cliente e o total devido."""
     cliente = crud_cliente.obter_cliente(db, cliente_id)
     if cliente is None:
         raise HTTPException(status_code=404, detail="Cliente não encontrado")
@@ -62,6 +68,7 @@ def conta(cliente_id: int, db: DbSession):
 
 @router.post("/{cliente_id}/conta/fechar", response_model=ContaRead)
 def fechar(cliente_id: int, dados: FecharConta, db: DbSession):
+    """Quita a conta inteira do cliente na forma escolhida."""
     cliente = crud_cliente.obter_cliente(db, cliente_id)
     if cliente is None:
         raise HTTPException(status_code=404, detail="Cliente não encontrado")

@@ -15,6 +15,12 @@ FUSO_MANAUS = timezone(timedelta(hours=-4))
 
 
 def criar_venda(db: Session, dados: VendaCreate, registrado_por_id: int) -> Venda:
+    """Com `cliente_id` a venda nasce fiada (sem forma nem `paga_em`); sem ele, já paga.
+
+    Congela preço e dono de cada item e dá baixa no estoque. Levanta `ValueError` se
+    cliente ou produto não existem, se falta forma numa venda à vista, ou se o estoque
+    não cobre a quantidade — nesse caso nada é gravado.
+    """
     if dados.cliente_id is not None:
         cliente = db.get(Cliente, dados.cliente_id)
         if cliente is None:
@@ -48,8 +54,8 @@ def criar_venda(db: Session, dados: VendaCreate, registrado_por_id: int) -> Vend
         venda.itens.append(
             ItemVenda(
                 produto_id=item.produto_id,
-                # dono congelado no ato, pelo mesmo motivo do preço: se o produto
-                # mudar de dono depois, a venda antiga continua creditada a quem vendeu
+                # dono congelado junto com o preço: trocar o dono do produto depois não
+                # pode remexer no crédito de venda já feita
                 vendedor_id=produto.vendedor_id,
                 quantidade=item.quantidade,
                 preco_unitario=produto.preco,
@@ -88,6 +94,11 @@ def listar_vendas(
     fim: date | None = None,
     incluir_canceladas: bool = False,
 ) -> list[Venda]:
+    """Filtra por **quando a venda foi registrada** (`data_hora`), da mais nova pra mais antiga.
+
+    Não confundir com o relatório, que soma por `paga_em`: um fiado registrado terça e
+    pago quinta aparece aqui na terça e no recebido da quinta.
+    """
     consulta = select(Venda)
 
     # o padrão esconde cancelada; quem revisa o dia precisa vê-la pra saber o que já desfez
@@ -111,13 +122,16 @@ def obter_venda(db: Session, venda_id: int) -> Venda | None:
 
 
 def cancelar_venda(db: Session, venda: Venda) -> Venda:
-    # idempotente: cancelar de novo devolveria a mercadoria duas vezes
+    """Marca a venda como cancelada e devolve a mercadoria ao estoque.
+
+    A linha continua no banco — some dos totais, mas segue visível e tachada na tela.
+    Idempotente: cancelar de novo devolveria a mercadoria duas vezes.
+    """
     if venda.cancelada_em is not None:
         return venda
 
     venda.cancelada_em = datetime.now(timezone.utc)
 
-    # venda cancelada já sai de todos os totais; a mercadoria volta pra prateleira
     for item in venda.itens:
         produto = db.get(Produto, item.produto_id)
         if produto is not None and produto.estoque is not None:
@@ -129,6 +143,7 @@ def cancelar_venda(db: Session, venda: Venda) -> Venda:
 
 
 def listar_conta(db: Session, cliente_id: int) -> list[Venda]:
+    """As vendas fiadas ainda em aberto do cliente, da mais nova pra mais antiga."""
     return list(
         db.scalars(
             select(Venda)
@@ -176,6 +191,11 @@ def contas_abertas(
 def fechar_conta(
     db: Session, cliente_id: int, forma_pagamento: FormaPagamento
 ) -> list[Venda]:
+    """Quita de uma vez toda a conta do cliente, e devolve as vendas quitadas.
+
+    A data de pagamento é agora, não a da venda — por isso o recebido do relatório cai
+    no dia do acerto. Levanta `ValueError` se não há conta em aberto.
+    """
     vendas = listar_conta(db, cliente_id)
     if not vendas:
         raise ValueError("Cliente não tem conta em aberto")
@@ -194,6 +214,11 @@ def fechar_conta(
 def recebido_por_vendedor(
     db: Session, inicio: date, fim: date
 ) -> dict[int, dict[FormaPagamento, Decimal]]:
+    """`{vendedor_id: {forma: total}}` do dinheiro que entrou no escopo.
+
+    Conta por `paga_em`, então fiado só aparece no dia em que foi acertado. Forma sem
+    venda nenhuma não vem na resposta.
+    """
     primeiro, ultimo = _intervalo(inicio, fim)
 
     linhas = db.execute(
@@ -218,6 +243,10 @@ def recebido_por_vendedor(
 
 
 def contas_abertas_por_vendedor(db: Session) -> dict[int, dict[int, Decimal]]:
+    """`{vendedor_id: {cliente_id: devido}}` — saldo de agora, sem recorte de data.
+
+    Por isso o relatório só mostra esses valores quando o escopo alcança hoje.
+    """
     linhas = db.execute(
         select(
             ItemVenda.vendedor_id,

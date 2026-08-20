@@ -7,7 +7,10 @@ from app.security import hash_senha
 
 
 def criar_usuario(db: Session, dados: UsuarioCreate) -> Usuario:
+    """Ponte senha→hash: a senha crua entra aqui e nunca é guardada.
 
+    Levanta `ValueError` se o username já existe.
+    """
     if buscar_por_username(db, dados.username) is not None:
         raise ValueError(f"Username '{dados.username}' já está em uso")
 

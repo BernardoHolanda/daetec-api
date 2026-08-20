@@ -16,16 +16,19 @@ router = APIRouter(
     dependencies=[Depends(exigir_admin)],
 )
 def criar(dados: VendedorCreate, db: DbSession):
+    """Cadastra um vendedor. Exige admin."""
     return crud_vendedor.criar_vendedor(db, dados)
 
 
 @router.get("", response_model=list[VendedorRead])
 def listar(db: DbSession):
+    """Todos os vendedores."""
     return crud_vendedor.listar_vendedores(db)
 
 
 @router.get("/{vendedor_id}", response_model=VendedorRead)
 def obter(vendedor_id: int, db: DbSession):
+    """Um vendedor pelo id."""
     vendedor = crud_vendedor.obter_vendedor(db, vendedor_id)
     if vendedor is None:
         raise HTTPException(status_code=404, detail="Vendedor não encontrado")
@@ -36,6 +39,7 @@ def obter(vendedor_id: int, db: DbSession):
     "/{vendedor_id}", response_model=VendedorRead, dependencies=[Depends(exigir_admin)]
 )
 def atualizar(vendedor_id: int, dados: VendedorCreate, db: DbSession):
+    """Renomeia o vendedor. Exige admin."""
     vendedor = crud_vendedor.obter_vendedor(db, vendedor_id)
     if vendedor is None:
         raise HTTPException(status_code=404, detail="Vendedor não encontrado")
@@ -44,6 +48,7 @@ def atualizar(vendedor_id: int, dados: VendedorCreate, db: DbSession):
 
 @router.delete("/{vendedor_id}", status_code=204, dependencies=[Depends(exigir_admin)])
 def deletar(vendedor_id: int, db: DbSession):
+    """Remove o vendedor. Recusa com 409 se ele tem produto ou venda."""
     vendedor = crud_vendedor.obter_vendedor(db, vendedor_id)
     if vendedor is None:
         raise HTTPException(status_code=404, detail="Vendedor não encontrado")

@@ -13,6 +13,7 @@ router = APIRouter(
 
 @router.post("", response_model=VendaRead, status_code=201)
 def criar(dados: VendaCreate, db: DbSession, usuario: UsuarioLogado):
+    """Registra uma venda. Com `cliente_id` ela nasce fiada; sem ele, já paga."""
     try:
         return crud_venda.criar_venda(db, dados, registrado_por_id=usuario.id)
     except ValueError as e:
@@ -28,6 +29,7 @@ def listar(
     fim: date | None = None,
     incluir_canceladas: bool = False,
 ):
+    """Vendas por data de registro. Sem escopo, devolve todas."""
     return crud_venda.listar_vendas(
         db,
         registrado_por_id=usuario.id if minhas else None,
@@ -39,6 +41,7 @@ def listar(
 
 @router.get("/{venda_id}", response_model=VendaRead)
 def obter(venda_id: int, db: DbSession):
+    """Uma venda pelo id."""
     venda = crud_venda.obter_venda(db, venda_id)
     if venda is None:
         raise HTTPException(status_code=404, detail="Venda não encontrada")
@@ -49,6 +52,7 @@ def obter(venda_id: int, db: DbSession):
     "/{venda_id}", response_model=VendaRead, dependencies=[Depends(exigir_admin)]
 )
 def cancelar(venda_id: int, db: DbSession):
+    """Cancela a venda e devolve a mercadoria ao estoque. Exige admin."""
     venda = crud_venda.obter_venda(db, venda_id)
     if venda is None:
         raise HTTPException(status_code=404, detail="Venda não encontrada")

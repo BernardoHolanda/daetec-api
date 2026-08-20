@@ -14,6 +14,7 @@ router = APIRouter(prefix="/usuarios", tags=["usuarios"])
     dependencies=[Depends(exigir_admin)],
 )
 def criar_usuario(dados: UsuarioCreate, db: DbSession):
+    """Cria um usuário. Exige admin."""
     try:
         return crud_usuario.criar_usuario(db, dados)
     except ValueError as e:
@@ -22,11 +23,13 @@ def criar_usuario(dados: UsuarioCreate, db: DbSession):
 
 @router.get("", response_model=list[UsuarioRead], dependencies=[Depends(exigir_admin)])
 def listar_usuarios(db: DbSession):
+    """Todos os usuários, sem o hash da senha. Exige admin."""
     return crud_usuario.listar_usuarios(db)
 
 
 @router.get("/me", response_model=UsuarioRead)
 def usuario_atual(usuario: UsuarioLogado):
+    """Quem é o dono do token — a tela usa pra saber o papel."""
     return usuario
 
 
@@ -34,6 +37,7 @@ def usuario_atual(usuario: UsuarioLogado):
     "/{usuario_id}", response_model=UsuarioRead, dependencies=[Depends(exigir_admin)]
 )
 def obter_usuario(usuario_id: int, db: DbSession):
+    """Um usuário pelo id. Exige admin."""
     usuario = crud_usuario.obter_usuario(db, usuario_id)
     if usuario is None:
         raise HTTPException(status_code=404, detail="Usuário não encontrado")

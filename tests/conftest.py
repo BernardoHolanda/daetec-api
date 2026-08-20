@@ -35,9 +35,8 @@ def engine():
     admin.dispose()
 
     eng = create_engine(TEST_DATABASE_URL)
-    # drop antes de create: o banco de teste sobrevive entre execuções e
-    # create_all NÃO altera tabela existente. Sem isso, model com coluna nova
-    # roda contra schema velho e quebra com "column does not exist".
+    # drop antes de create: o banco sobrevive entre execuções e create_all NÃO altera
+    # tabela existente — sem isso, coluna nova quebra com "column does not exist"
     Base.metadata.drop_all(eng)
     Base.metadata.create_all(eng)
     yield eng
@@ -60,7 +59,7 @@ def db_session(engine):
 
 @pytest.fixture
 def client(db_session):
-    """TestClient com o get_db trocado pelal)."""
+    """TestClient com o `get_db` trocado pela sessão transacional do teste."""
 
     def get_db_de_teste():
         # espelha o get_db real: sem o rollback, a sessão compartilhada do teste

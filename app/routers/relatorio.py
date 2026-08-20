@@ -20,6 +20,12 @@ def relatorio(
     inicio: date | None = None,
     fim: date | None = None,
 ):
+    """Recebido por vendedor e forma no escopo, mais as contas em aberto.
+
+    Sem `inicio` e `fim`, responde o dia de hoje no fuso de Manaus. O recebido conta
+    por data de pagamento; a conta em aberto é saldo de agora, sem recorte de data.
+    Exige admin.
+    """
     inicio, fim = crud_venda.normalizar_escopo(inicio, fim)
 
     recebido = crud_venda.recebido_por_vendedor(db, inicio, fim)

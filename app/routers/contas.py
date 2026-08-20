@@ -13,6 +13,7 @@ router = APIRouter(
 
 @router.get("", response_model=ContasAbertasRead)
 def listar(db: DbSession):
+    """Um resumo por cliente devedor, da maior dívida pra menor."""
     contas = [
         ContaAbertaRead.model_validate(linha) for linha in crud_venda.contas_abertas(db)
     ]

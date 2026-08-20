@@ -15,8 +15,7 @@ class Vendedor(Base):
     nome: Mapped[str] = mapped_column(unique=True)
 
     # passive_deletes: sem isso o ORM tenta anular o vendedor_id dos itens antes de
-    # apagar o vendedor. Quem recusa a remoção tem que ser a FK do banco, não um
-    # UPDATE inventado que só falha porque a coluna é NOT NULL.
+    # apagar. Quem recusa a remoção tem que ser a FK, não um UPDATE inventado
     itens: Mapped[list["ItemVenda"]] = relationship(
         back_populates="vendedor", passive_deletes=True
     )

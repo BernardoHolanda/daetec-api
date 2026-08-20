@@ -16,6 +16,7 @@ def login(
     dados: Annotated[OAuth2PasswordRequestForm, Depends()],
     db: DbSession,
 ):
+    """Troca usuário e senha por um token. O corpo é form-encoded, não JSON."""
     usuario = crud_usuario.buscar_por_username(db, dados.username)
     if usuario is None or not verificar_senha(dados.password, usuario.senha_hash):
         raise HTTPException(status_code=401, detail="Usuário ou senha inválidos")

@@ -7,11 +7,13 @@ from app.schemas.produto import ProdutoCreate
 
 
 def _exigir_vendedor(db: Session, vendedor_id: int) -> None:
+    """Levanta `ValueError` se o dono não existe — o router traduz em 400."""
     if db.get(Vendedor, vendedor_id) is None:
         raise ValueError(f"Vendedor {vendedor_id} não existe")
 
 
 def criar_produto(db: Session, dados: ProdutoCreate) -> Produto:
+    """Levanta `ValueError` se o `vendedor_id` não existe."""
     _exigir_vendedor(db, dados.vendedor_id)
     produto = Produto(
         nome=dados.nome,
@@ -34,6 +36,7 @@ def obter_produto(db: Session, produto_id: int) -> Produto | None:
 
 
 def atualizar_produto(db: Session, produto: Produto, dados: ProdutoCreate) -> Produto:
+    """Levanta `ValueError` se o `vendedor_id` não existe."""
     _exigir_vendedor(db, dados.vendedor_id)
     produto.nome = dados.nome
     produto.preco = dados.preco
