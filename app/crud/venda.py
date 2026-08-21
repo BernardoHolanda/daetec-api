@@ -94,11 +94,13 @@ def listar_vendas(
     fim: date | None = None,
     incluir_canceladas: bool = False,
 ) -> list[Venda]:
-    """Filtra por **quando a venda foi registrada** (`data_hora`), da mais nova pra mais antiga.
+    """Filtra pela data em que o dinheiro se moveu, da mais nova pra mais antiga.
 
-    Não confundir com o relatório, que soma por `paga_em`: um fiado registrado terça e
-    pago quinta aparece aqui na terça e no recebido da quinta.
+    Fiado em aberto conta pela `data_hora`; depois de acertado passa a contar pelo
+    `paga_em` — e sai do escopo do dia da venda. Mesmo critério do relatório, então as
+    duas telas fecham no mesmo total.
     """
+    quando = func.coalesce(Venda.paga_em, Venda.data_hora)
     consulta = select(Venda)
 
     # o padrão esconde cancelada; quem revisa o dia precisa vê-la pra saber o que já desfez
@@ -111,10 +113,10 @@ def listar_vendas(
     # sem ponta alguma não filtra data: `/vendas` puro continua listando tudo
     if inicio is not None or fim is not None:
         consulta = consulta.where(
-            Venda.data_hora.between(*_intervalo(*normalizar_escopo(inicio, fim)))
+            quando.between(*_intervalo(*normalizar_escopo(inicio, fim)))
         )
 
-    return list(db.scalars(consulta.order_by(Venda.data_hora.desc())).all())
+    return list(db.scalars(consulta.order_by(quando.desc())).all())
 
 
 def obter_venda(db: Session, venda_id: int) -> Venda | None:

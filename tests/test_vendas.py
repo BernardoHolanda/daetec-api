@@ -88,9 +88,10 @@ def test_minhas_traz_so_as_vendas_do_usuario(
 
 def test_filtro_por_dia(client_comum, db_session, produto):
     antiga = _venda(client_comum, produto.id)
-    db_session.get(Venda, antiga).data_hora = datetime(
-        2026, 1, 5, 10, tzinfo=FUSO_MANAUS
-    )
+    # à vista, os dois campos são o mesmo instante — e o filtro usa `paga_em`
+    quando = datetime(2026, 1, 5, 10, tzinfo=FUSO_MANAUS)
+    venda = db_session.get(Venda, antiga)
+    venda.data_hora = venda.paga_em = quando
     db_session.commit()
     recente = _venda(client_comum, produto.id)
 
@@ -103,10 +104,8 @@ def test_filtro_por_dia(client_comum, db_session, produto):
 
 def test_dia_usa_o_fuso_de_manaus(client_comum, db_session, produto):
     """23:30 em Manaus é 03:30 UTC do dia seguinte — não pode vazar pro outro dia."""
-    venda = _venda(client_comum, produto.id)
-    db_session.get(Venda, venda).data_hora = datetime(
-        2026, 3, 10, 23, 30, tzinfo=FUSO_MANAUS
-    )
+    venda = db_session.get(Venda, _venda(client_comum, produto.id))
+    venda.data_hora = venda.paga_em = datetime(2026, 3, 10, 23, 30, tzinfo=FUSO_MANAUS)
     db_session.commit()
 
     def no_dia(dia):

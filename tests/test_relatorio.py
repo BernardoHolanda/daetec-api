@@ -12,7 +12,9 @@ def _recuar(db_session, venda_id: int, dias: int):
         hoje_manaus() - timedelta(days=dias), time(12, 0), tzinfo=FUSO_MANAUS
     )
     venda.data_hora = quando
-    venda.paga_em = quando
+    # fiado em aberto continua aberto: recuar no tempo não é pagar
+    if venda.paga_em is not None:
+        venda.paga_em = quando
     db_session.commit()
 
 
@@ -109,6 +111,36 @@ def test_uma_ponta_so_vira_dia_unico(client_admin, produto, db_session):
     assert corpo["fim"] == alvo
     # só a venda recuada entra: a de hoje ficou fora
     assert Decimal(corpo["vendedores"][0]["recebido_total"]) == Decimal("10")
+
+
+def test_fiado_acertado_muda_de_escopo(client_admin, produto, cliente, db_session):
+    """Fiado conta pelo dia da venda enquanto aberto, e pelo dia do acerto depois."""
+    resp = client_admin.post(
+        "/vendas",
+        json={
+            "cliente_id": cliente.id,
+            "itens": [{"produto_id": produto.id, "quantidade": 1}],
+        },
+    )
+    _recuar(db_session, resp.json()["id"], dias=3)
+
+    hoje = hoje_manaus().isoformat()
+    antes = (hoje_manaus() - timedelta(days=3)).isoformat()
+
+    def no_dia(dia):
+        return client_admin.get("/vendas", params={"inicio": dia, "fim": dia}).json()
+
+    # em aberto: aparece no dia da venda
+    assert len(no_dia(antes)) == 1
+    assert len(no_dia(hoje)) == 0
+
+    client_admin.post(
+        f"/clientes/{cliente.id}/conta/fechar", json={"forma_pagamento": "pix"}
+    )
+
+    # acertado hoje: saiu do dia da venda e entrou no de hoje
+    assert len(no_dia(antes)) == 0
+    assert len(no_dia(hoje)) == 1
 
 
 def test_vendas_aceitam_escopo(client_admin, produto, db_session):
