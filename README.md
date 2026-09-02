@@ -207,6 +207,7 @@ app/
 alembic/           # migrations
 tests/             # suíte pytest
 .github/workflows/ # ci.yml (testes) e backup.yml (pg_dump semanal)
+infra/             # limpeza.json — retenção de imagens no Artifact Registry
 seed.py            # cria o admin inicial
 homolog.sh         # roda comandos contra o branch de homologação
 ```

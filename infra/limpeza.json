@@ -1,0 +1,12 @@
+[
+  {
+    "name": "manter-3-deploys",
+    "action": { "type": "Keep" },
+    "mostRecentVersions": { "keepCount": 9 }
+  },
+  {
+    "name": "apagar-o-resto",
+    "action": { "type": "Delete" },
+    "condition": { "tagState": "ANY", "olderThan": "7d" }
+  }
+]
