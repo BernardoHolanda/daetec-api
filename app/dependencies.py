@@ -1,7 +1,7 @@
 from typing import Annotated
 
 import jwt
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Response, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 
@@ -9,7 +9,13 @@ from app.crud import usuario as crud_usuario
 from app.database import get_db
 from app.enums import PapelUsuario
 from app.models.usuario import Usuario
-from app.security import JWT_ALGORITHM, JWT_SECRET
+from app.security import (
+    CABECALHO_TOKEN_NOVO,
+    JWT_ALGORITHM,
+    JWT_SECRET,
+    criar_token,
+    perto_de_expirar,
+)
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
@@ -17,7 +23,7 @@ DbSession = Annotated[Session, Depends(get_db)]
 TokenBearer = Annotated[str, Depends(oauth2_scheme)]
 
 
-def get_current_user(token: TokenBearer, db: DbSession) -> Usuario:
+def get_current_user(token: TokenBearer, db: DbSession, response: Response) -> Usuario:
     credenciais_invalidas = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Credenciais inválidas",
@@ -35,6 +41,11 @@ def get_current_user(token: TokenBearer, db: DbSession) -> Usuario:
     usuario = crud_usuario.buscar_por_username(db, username)
     if usuario is None:
         raise credenciais_invalidas
+
+    if perto_de_expirar(payload):
+        response.headers[CABECALHO_TOKEN_NOVO] = criar_token(
+            sub=usuario.username, papel=usuario.papel
+        )
 
     return usuario
 

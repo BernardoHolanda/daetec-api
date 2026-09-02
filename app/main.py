@@ -17,6 +17,7 @@ from app.routers import (
     vendas,
     vendedores,
 )
+from app.security import CABECALHO_TOKEN_NOVO
 
 app = FastAPI(title="DAETEC API")
 # split sem strip: espaço depois da vírgula no .env vira origem que não casa com nada
@@ -24,6 +25,7 @@ origins = os.getenv("CORS_ORIGINS", "http://localhost:5173").split(",")
 
 app.add_middleware(
     CORSMiddleware,
+    expose_headers=[CABECALHO_TOKEN_NOVO],
     allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],

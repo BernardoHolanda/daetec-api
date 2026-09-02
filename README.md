@@ -17,7 +17,8 @@ fechamento de caixa.
 
 ## Funcionalidades
 
-- **Autenticação** por JWT com dois papéis: `admin` e `comum`.
+- **Autenticação** por JWT com dois papéis: `admin` e `comum`. A sessão **desliza**: o
+  token se renova enquanto o app está em uso e expira por inatividade.
 - **Produtos, vendedores e clientes** (CRUD, nomes normalizados em MAIÚSCULA, nomes únicos).
   A remoção é barrada pela **chave estrangeira** quando o cadastro já tem histórico —
   quem vendeu, comprou ou é dono de produto não sai (409).
@@ -36,7 +37,10 @@ fechamento de caixa.
 ## Endpoints
 
 Tudo exige token, exceto `POST /login` e as duas rotas de saúde. O token vai no cabeçalho
-`Authorization: Bearer <token>` e vale 60 minutos.
+`Authorization: Bearer <token>` e vale 60 minutos — mas o prazo anda junto com o uso:
+passada a metade da vida, a resposta traz um substituto no cabeçalho `X-Token-Renovado`,
+que o cliente deve guardar no lugar do anterior. Assim quem está no balcão não é
+deslogado no meio de uma venda, e quem largou o aparelho perde a sessão em uma hora.
 
 | Método | Rota | Acesso |
 |---|---|---|

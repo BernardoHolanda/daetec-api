@@ -8,6 +8,7 @@ import jwt
 JWT_SECRET = os.environ["JWT_SECRET"]
 JWT_ALGORITHM = "HS256"
 TOKEN_EXPIRA_MINUTOS = 60
+CABECALHO_TOKEN_NOVO = "X-Token-Renovado"
 
 
 def hash_senha(senha: str) -> str:
@@ -28,3 +29,11 @@ def criar_token(sub: str, papel: str) -> str:
         "exp": agora + timedelta(minutes=TOKEN_EXPIRA_MINUTOS),
     }
     return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
+
+
+def perto_de_expirar(payload: dict) -> bool:
+    """Passou da metade da vida: hora de mandar um substituto junto da resposta."""
+    expira_em = datetime.fromtimestamp(payload["exp"], timezone.utc)
+    return expira_em - datetime.now(timezone.utc) < timedelta(
+        minutes=TOKEN_EXPIRA_MINUTOS / 2
+    )
