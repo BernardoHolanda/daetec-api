@@ -11,7 +11,7 @@ fechamento de caixa.
 
 **Frontend:** [BernardoHolanda/daetec-frontend](https://github.com/BernardoHolanda/daetec-frontend) (Vue 3 + TypeScript + Tailwind).
 
-**Em produção:** API no Google Cloud Run, banco no Neon, interface no Cloudflare Pages.
+**Em produção:** API no Render, banco no Neon, interface no Cloudflare Pages.
 
 ---
 
@@ -173,12 +173,18 @@ executar, justamente para você não confundir os bancos:
 
 A imagem é **multi-stage**: o estágio `dev` tem git (o Dev Container precisa), e o
 `producao` não — são 136 MB a menos viajando em cada deploy. `producao` é o **último**
-estágio do Dockerfile, que é o alvo padrão do build, então o Cloud Run constrói o certo sem
+estágio do Dockerfile, que é o alvo padrão do build, então o Render constrói o certo sem
 receber nenhum parâmetro.
 
-Depois de um deploy, **confira em qual revisão está o tráfego**: revisão que falha ao subir
-fica com 0% e a anterior continua servindo — o push "funciona" e o comportamento não muda,
-porque o código novo nunca atendeu ninguém.
+O Render (plano free) faz deploy sozinho a cada push na `main`. Duas consequências:
+
+- **Confira se o deploy ficou "live"** nos *Events* do painel: deploy que falha ao subir
+  deixa a versão anterior servindo — o push "funciona" e o comportamento não muda, porque
+  o código novo nunca atendeu ninguém.
+- **Migration é na mão:** o plano free não roda comando antes do deploy, então
+  `alembic upgrade head` contra a produção vem antes do push que depende dela.
+
+O serviço dorme após 15 min sem requisição; a primeira depois disso leva até ~1 min.
 
 ## Backup
 
@@ -207,7 +213,6 @@ app/
 alembic/           # migrations
 tests/             # suíte pytest
 .github/workflows/ # ci.yml (testes) e backup.yml (pg_dump semanal)
-infra/             # limpeza.json — retenção de imagens no Artifact Registry
 seed.py            # cria o admin inicial
 homolog.sh         # roda comandos contra o branch de homologação
 ```

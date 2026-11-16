@@ -21,11 +21,11 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 USER appuser
 
-# Último estágio = alvo padrão do build. O Cloud Run constrói sem passar target
+# Último estágio = alvo padrão do build. O Render constrói sem passar target
 # nenhum, então precisa ser este que fica por último.
 FROM base AS producao
 USER appuser
 EXPOSE 8000
-# Forma shell (sh -c) porque a forma exec não expande variável: o Cloud Run
+# Forma shell (sh -c) porque a forma exec não expande variável: o Render
 # injeta a porta em $PORT, e o padrão 8000 mantém o local igual ao de antes.
 CMD ["sh", "-c", "fastapi run app/main.py --host 0.0.0.0 --port ${PORT:-8000}"]
